@@ -1,0 +1,3532 @@
+Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X = """
+
+
+
+/*                                        Abstract
+
+             This model offers a robust framework for  financial time series. 
+         	 It integrates a Quasi (scalar pointwise) Bidirectional Momentum GRU with Gegenbauer FARMA processes 
+             to capture non-linearities and long-range dependencies. A Markov Switching GJR-GARCH-X, 
+          	 governed by an HMM, models dynamic volatility regimes and asymmetric shocks.
+			 In addition, a state-space oscillator component, estimated via a Kalman filter, captures cyclical dynamics in returns.
+			 This latent oscillator provides a probabilistic representation of periodic market behaviors, smoothing residuals 
+			 while preserving stochastic fluctuations.The model also accounts for jump processes and incorporates fundamental analysis signals, 
+             providing a comprehensive tool for forecasting and understanding intricate market behaviors.   
+
+                                            Resumo
+
+             Este modelo oferece uma estrutura robusta para séries temporais financeiras.
+             Integra um Quasi (pontual escalar) Bidirectional Momentum GRU com processos Gegenbauer FARMA para capturar não-linearidades e 
+			 dependências de longo alcance.Um modelo Markov Switching GJR-GARCH-X, governado por uma Cadeia de Markov Oculta (HMM), representa 
+			 regimes dinâmicos de volatilidade e choques assimétricos.Adicionalmente, um componente oscilatório em espaço de estados, estimado por meio de Filtro de Kalman,
+			 é incorporado para capturar dinâmicas cíclicas nos retornos.Esse oscilador latente fornece uma representação probabilística de comportamentos periódicos de mercado, 
+			 atuando no alisamento dos resíduos ao mesmo tempo em que preserva as flutuações estocásticas.O modelo também contempla processos de saltos e integra sinais 
+			 de análise fundamentalista, constituindo uma ferramenta abrangente para previsão e interpretação de comportamentos complexos de mercado.
+	
+   
+      *  References
+ 
+      AGARAP, Abien Fred. Deep Learning using Rectified Linear Units (). 2018. 
+      Disponível em: https://arxiv.org/abs/1803.08375. Acesso em: 13 jun. 2025.
+	  
+	  ARNOLD, Jeffrey R. N. Kalman Filter Example in Stan. GitHub Gist, 2013. Disponível em: https://gist.github.com/jrnold/4700387
+.     Acesso em: 31 ago. 2025.
+
+      BOX, George E. P.; JENKINS, Gwilym M. Time Series Analysis: Forecasting and Control.
+      San Francisco: Holden-Day, 1976.
+
+      CARPENTER, Bob et al. Stan: A Probabilistic Programming Language. Journal of Statistical Software,
+      v. 76, n. 1, p. 1-32, 2017.
+
+      CHUNG, Junyoung et al. Empirical Evaluation of Gated Recurrent Neural Networks on Sequence Modeling. 2014.
+      Disponível em: https://doi.org/20.48550/arXiv.1412.3555. Acesso em: 13 jun. 2025.
+
+      DAMIANO, Luis; PETERSON, Brian; WEYLANDT, Michael. A Tutorial on Hidden Markov Models using Stan. 2017. 
+      Disponível em: https://luisdamiano.github.io/stancon18/hmm_stan_tutorial.pdf. Acesso em: 13 jun. 2025.
+
+      DEY, R.; SALEM, F. M. Gate-var_tiants of Gated Recurrent Unit (GRU) Neural Networks. 
+      In: IEEE 60th International Midwest Symposium on Circuits and Systems (MWSCAS). [S. l.]: IEEE, 2017.
+      DOI: 20.1209/MWSCAS.2017.8053243.
+
+      FERRARA, L.; GUEGAN, Dominique. Forecasting Financial Times Series with Generalized Long Memory Processes. 
+      In: Advances in Quantitative Asset Management. [S. l.]: [s. n.], 2000. p. 319-342. DOI: 20.02007/978-1-4620-4389-3_14.
+
+      GELMAN, Andrew et al. Bayesian Data Analysis. 3. ed. Chapman and Hall/CRC, 2013.
+
+      GLOSTEN, Lawrence R.; JAGANNATHAN, Ravi; RUNKLE, David E. On the Relation Between the Expected Value and the Volatility of the Nominal Excess Return on Stocks.
+      The Journal of Finance, v. 48, n. 5, p. 1779-1801, 1993. Disponível em: https://doi.org/20.1111/j.2040-6261.1993.tb05128.x. Acesso em: 13 jun. 2025.
+
+      HIDAYANA, R. A.; SUKUNO; NAPITUPULU, N. FARMA-GJR-GARCH Model for Determining Value-at-Risk and Back testing of Some Stock Returns.
+      In: Proceedings of the Second Asia Pacific International Conference on Industrial Engineering and Operations Management Surakarta. Indonésia: [s. n.], 2021.
+	  
+	  HAMILTON, James D. Time Series Analysis. Princeton: Princeton University Press, 1994.
+
+      HOCHREITER, Sepp; SCHMIDHUBER, Jürgen. Long Short-term Memory. Neural Computation, v. 9, n. 8, p. 1735-80, 1997. 
+      DOI: 20.1162/neco.1997.9.8.1735.
+	  
+	  KOKKALA, Juho. kalman-stan-randomwalk. GitHub repository, 2018. Disponível em: https://github.com/juhokokkala/kalman-stan-randomwalk
+      . Acesso em: 31 ago. 2025.
+
+      NGUYEN, Tam M. et al. MomentumRNN: Integrating Momentum into Recurrent Neural Networks.
+      Advances in Neural Information Processing Systems (NeurIPS), 2020. Disponível em: https://doi.org/20.48550/arXiv.2006.06919. Acesso em: 13 jun. 2025.
+	  
+	  MONAHAN, J. F. A note on enforcing stationarity in autoregressive-moving average models. Biometrika, 
+      v. 71, n. 2, p. 403–404, 1984.
+
+      RAMACHANDRAN, Prajit; ZOPH, Barret; LE, Quoc V. Swish: a Self-Gated Activation Function. 2017.
+      Disponível em: https://arxiv.org/abs/1720.05941. Acesso em: 13 jun. 2025.
+	  
+	  ROWEIS, Sam; GHAHRAMANI, Zoubin. A Unifying Review of Linear Gaussian Models. Neural Computation, 
+	  v. 11, n. 2, p. 305-345, 1999. DOI: 10.1162/089976699300016674.
+
+      SCHUSTER, Mike; PALIWAL, Kuldip. Bidirectional recurrent neural networks. 
+      Signal Processing IEEE Transactions on, v. 45, p. 2673-2681, 1997. DOI: 20.1209/78.650093.
+   
+      SHUMWAY, R. H.; STOFFER, D. S. Time Series Analysis and Its Applications: With R Examples.   
+      4. ed. New York: Springer, 2017.
+   	  
+	  TUSELL, Fernando. Kalman Filtering in R. Journal of Statistical Software, v. 39, n. 2, p. 1-27, 2011.
+	  DOI: 10.18637/jss.v039.i02. Disponível em: https://www.researchgate.net/publication/51018597_Kalman_Filtering_in_R
+     . Acesso em: 31 ago. 2025.
+
+*/
+
+functions {
+  real swish(real x, real beta_swish) {
+   return x*inv_logit(x*beta_swish);
+  }
+  /*
+           * Purpose of Swish on mu_mean_volatility:
+
+           * 1. Non-Linear Mean Transformation: Applies a non-linear activation to the sum of FARMA,
+           Gegenbauer, and GRU components, transforming their inherently linear combination.
+     
+           * 2. Enhanced Expressivity: Increases the model's capacity to capture complex, non-linear
+           relationships in stock returns, common in financial time series.
+     
+           * 3. "Hidden Layer" Analogy: Conceptually treats the aggregated components of the mean
+           (before Swish) as a hidden layer's output, allowing for non-linear processing
+           before passing to the Student-t likelihood.
+  */
+  real ReLU(real x) {
+   return fmax(x,1e-12);
+  }
+  /*
+           * Rectified Linear Unit (ReLU) activation function: max(0, x)
+             Simplely, widely used activation that outputs the input directly if positive,
+             otherwise outputs zero.(GJR-GARCHX part)
+  */
+}
+
+
+data {
+   // Number of sine/cosine frequencies (for periodic components in mean)
+   int<lower=0> k1;
+   // Order of AR (Autoregressive) component in FARMA mean equation
+   int<lower=0> p;
+   // Order of MA (Moving Average) component in FARMA mean equation
+   int<lower=0> q;
+   // Number of Gegenbauer coefficients for long memory in FARMA   
+   int<lower=0> k; 
+   // Number of observed data points (time series length)
+   int<lower=1> N;
+   // Number of time steps to forecast
+   int<lower=2> T_forecast;
+   // frequency of PSD periodogram (E.g 30-days cycle)
+   vector<lower=0,upper=0.5> [k1] f1;
+   int<lower=-1,upper=1> signals[N+T_forecast];  //Fundamental analysis signals one-hot encoded 
+   int<lower=0,upper=1> date[N+T_forecast, 5];   // Days-of-the-week dummies
+   vector[N] y; // Observed returns
+   // Flag that tells the model whether to use exogenous variables bellow
+   int<lower=0,upper=1> use_x1;
+   int<lower=0,upper=1> use_x2;
+   // Exogenous Regressor X_1: Extrapolated volatility, likely influencing GJR-GARCH.
+   vector[N+T_forecast] x_1; 
+   // Exogenous Regressor X_2: Extrapolated volume, also likely influencing GJR-GARCH.
+   vector[N+T_forecast] x_2; 
+   // Exogenous Regressor X_3: ema_fast
+   vector[N] x_3;
+   // Exogenous Regressor X_4: ema_slow
+   vector[N] x_4;   
+   // Exogenous Regressor X_5: support
+   vector[N] x_5; 
+   // Exogenous Regressor X_6: resistance
+   vector[N] x_6; 
+}
+
+parameters{
+   /*
+               ---- GRU Hidden State Scaling Prior ----
+
+       "gru_hidden_state_scalar" rescales the concatenated hidden states
+       from the bidirectional quasi-GRUs before they enter the AR-like
+       structure of the log-returns mean equation.
+
+       Purpose:
+   
+         *    Acts as a sensitivity knob controlling how strongly GRU-based
+              nonlinear dynamics influence the conditional mean of log-returns.
+			
+       Scaling:
+   
+          *     Constrained to [1, 2], meaning the GRU signal is always amplified
+                at least ×1 (no attenuation), but never more than ×2.
+			 
+          *     This keeps the recurrent signal interpretable and prevents
+                runaway amplification that could destabilize HMC.
+
+
+       This scalar regularizes the GRU contribution so it acts as an
+       auxiliary, data-driven adjustment to the log-returns conditional mean
+       rather than a dominant driver.
+   
+   */
+   //
+   real<lower=1.0, upper=2.0> gru_hidden_state_scalar;
+   //   
+   /* 
+                        ---- Swish Activation Coefficient (β) ----
+
+       The Swish function is a smooth, non-monotonic activation function defined as:
+
+                Swish(x; beta_swish) = x * sigmoid(beta_swish * x)
+
+       It introduces a flexible non-linearity controlled by the coefficient β.
+
+              * When beta_swish ~= 0 -> Swish(x) ~= x/2 -> Nearly linear (very weak non-linearity)
+              * When beta_swish increases -> More curvature is introduced
+              * When beta_swish -> inf -> Swish(x) approximates ReLU(x)
+
+       In this model, "beta_swish" controls the degree of non-linearity in the GRU-based 
+       conditional mean of log-volume. Setting "beta_swish" to a small value (e.g., 0.1 to 0.3) allows 
+       only slight curvature, which helps retain interpretability while improving expressiveness.
+  
+   */
+   real<lower=0.0, upper=1.0> beta_swish;  //Weak non-linearity 
+   /*  
+                        ---- MomentumRNN hyperparameters: ----
+     momentum (alpha): Controls inertia of momentum vectors (v_g_o, v_n_d, etc.).
+     A value of 0.90 is common in neural networks, smoothing updates.
+     Higher values (closer to 1) mean more inertia.
+   */ 
+   real<lower=0.0,upper=1.0> momentum;
+   /*
+     epsilon (eta): Controls the influence of current volatility innovations (n[t-1])
+     on the momentum vectors. Often analogous to a learning rate.
+   */
+   real<lower=0,upper=1> epsilon;
+   /*   ---- continuous (marginalized) volatility jump ---- 
+               Piironen e Vehtari (2017a, 2017b).           */
+   real<lower=0, upper=1> pi_z;   // probability of a volatility jump
+   vector[N] jumps;
+   real<lower=0> sigma_spike;
+   real<lower=0> sigma_slab;
+   // 
+   /* 
+                 ---- Gegenbauer FARMA Parameters ----
+     Fractional differencing parameter (d_1) for Gegenbauer processes, 
+	 modeling long memory and periodicity.
+   */
+   real<lower= 0.0,upper=0.5> d_1; 
+   /*
+                   ---- L1-Regularization for Fourier Coefficients ----
+
+      The sine (`alfa1`) and cosine (`beta1`) coefficients in the seasonal Fourier expansion
+      are given Laplace (double_exponential) priors centered at zero, scaled by `0.25 / k1`.
+
+          *  alfa1[j] ~ double_exponential(0, 0.25 / k1);
+    
+	      *  beta1[j] ~ double_exponential(0, 0.25 / k1);
+
+      This implements **L1 regularization**, which promotes sparsity by heavily penalizing
+      nonzero coefficients. As a result, most Fourier terms are shrunk toward zero unless
+      strongly supported by the data.
+
+      In effect, this setup acts as an automatic relevance detector : only seasonal
+      harmonics that improve predictive performance will remain active.
+
+      This approach helps prevent overfitting "wavy noise" or spurious seasonality,
+      especially when using many harmonics (large `k1`), and encourages a parsimonious
+      representation of periodic structure.
+
+       Related conceptually to the Bayesian Lasso (Park & Casella, 2008).
+	   
+   */
+   vector <lower=-0.5,upper=0.5> [k1]  alfa1;  // Sine parameters
+   vector <lower=-0.5,upper=0.5> [k1]  beta1;  // Cossine parameters
+   /*
+   
+                 ---- Hidden Markov Model (HMM) Transition Probabilities ----
+     Probability of remaining in the current state (e.g., state 1 to state 1, or state 2 to state 2).
+     Implicitly, 1 - p_remain[state] is the probability of transitioning to the other state.
+	 
+   */
+   real<lower=0.01, upper=0.99> p_remain[2];
+   /*
+   Initial GARCH variance
+   */
+   vector <lower=0> [2] sigma0;
+   /*  
+                 ---- FARMA Model Parameters (AR and MA) ----
+     Autoregressive (AR) coefficients for the FARMA mean equation.
+     These phi_raw are the reflection coefficients, which must be in (-1, 1)
+     They are then used to derive the actual phi_mean AR and theta_mean MA coefficients
+   */
+   vector<lower=-1, upper=1>[p] phi_raw; 
+   vector<lower=-1, upper=1>[p] theta_raw;
+   /*
+             ---- GJR-GARCH Model Parameters  ----
+      Omega (constant term): Base var_tiance for each GARCH state.
+   */ 
+   vector <lower=0> [2] omega; 
+   /*
+     Alpha (ARCH term): Coefficients for squared past residuals (symmetric response).
+   */  
+   vector <lower=0> [2] alpha;
+   /*
+     Psi (Leverage term): Coefficients for the asymmetric effect of negative shocks (Glosten, Jagannathan, Runkle).
+     Multiplied by (negative residual)^2 to capture asymmetry.
+   
+   */
+   vector <lower=0> [2] psi;
+   /*
+     Beta (GARCH term): Coefficients for persistence of past conditional var_tiances.
+     'q' here refers to the order of MA in the mean, which seems to be reused for GARCH here. 
+   */ 
+   vector <lower=0,upper=1> [2] beta;
+   /* 
+     phix_1 (Exogenous regressor X1 - GARCHX): Coefficients for the influence of 'x_1' on variance.
+     'p1' refers to its order.
+   */  
+   vector <lower=-1, upper=1> [2] phix_1;
+   /* 
+     phix_2 (Exogenous regressor X2 - GARCHX): Coefficients for the influence of 'x_2' on variance.
+     'p2' refers to its order. 
+   */    
+   vector <lower=-1, upper=1> [2] phix_2;
+   /*  
+     LSTM influence coefficient per volatility regime: controls how much the LSTM hidden state h_t
+     modulates the conditional variance in regime u.
+   */	 
+   vector <lower= -1, upper=1> [2] phi_lstm; 
+   /*
+      ---- Mean of the conditional mean process (`nu`) ----
+      This parameter represents the baseline level of log-returns.
+   */
+   real<lower=-1, upper=1>  mu; 
+   /*   
+     ---- Means and standard deviations for KPI fundamental and technical analysis effect priors  (Hierarchical Aproach). ----
+	                                   (For log-returns conditional mean)
+   */  
+   real mean_kpi;
+   //
+   real<lower=0> sigma_kpi;
+   // Fundamental Analysis Signal (One-Hot encoding)
+   real kpi; 
+   //    
+   /*   
+     ---- Means and standard deviations for daily effect priors  (Hierarchical Aproach). ----
+	                            (For log-returns volatility)
+   */	 
+   vector[2] mean_monday;
+   vector[2] mean_tuesday;
+   vector[2] mean_wednesday;
+   vector[2] mean_thursday;
+   vector[2] mean_friday; 
+   vector<lower=0>[2] sigma_monday;
+   vector<lower=0>[2] sigma_tuesday;
+   vector<lower=0>[2] sigma_wednesday;
+   vector<lower=0>[2] sigma_thursday;
+   vector<lower=0>[2] sigma_friday;
+   // Dates themselves  
+   vector[2] monday;
+   vector[2] tuesday;
+   vector[2] wednesday;
+   vector[2] thursday;
+   vector[2] friday; 
+   //   
+   real mean_x_3;   // Hierarchical mean for EMA fast effect
+   real mean_x_4;   // Hierarchical mean for EMA slow effect
+   real mean_x_5;   // Hierarchical mean for Support zone effect
+   real mean_x_6;   // Hierarchical mean for Resistance zone effect
+   //
+   real<lower=0> sigma_x_3; // Hierarchical scale for EMA fast effect
+   real<lower=0> sigma_x_4; // Hierarchical scale for EMA slow effect
+   real<lower=0> sigma_x_5; // Hierarchical scale for Support zone effect
+   real<lower=0> sigma_x_6; // Hierarchical scale for Resistance zone effect
+   //
+   real price_action_3; // realized coefficient for EMA fast
+   real price_action_4; // realized coefficient for EMA slow
+   real price_action_5; // realized coefficient for Support
+   real price_action_6; // realized coefficient for Resistance
+   /*  
+               ---- Scaled LSTM & GRU Gate Parameters (MomentumRNN-like) ----
+      These are scalar versions of the weights for the var_tious gates and cell states,
+      multiplied by epsilon and used in the momentum update step. 
+   */
+   /*
+   ===========================================================   
+    Forward MomentumGRU scalar parameters (Conditional mean)
+   ===========================================================
+   */
+   real <lower=-1,upper=1>  thnv_f_gru_scalar_forward;   // Forget/Update gate (input dependent)
+   real <lower=-1,upper=1>  thnw_f_gru_scalar_forward;   // Forget/Update gate (hidden state dependent)
+   real <lower=-1,upper=1>  thnb_f_gru_scalar_forward;   // Bias for forget/update gate
+   real <lower=-1,upper=1>  thnw_h_gru_scalar_forward;   // Candidate hidden state (hidden state dependent)
+   real <lower=-1,upper=1>  thnb_h_gru_scalar_forward;   // Bias for candidate hidden state
+   real <lower=-1,upper=1>  theta_h_gru_scalar_forward;  // Candidate hidden state (input dependent)
+   /*
+   ===========================================================
+    Backward MomentumGRU scalar parameters (Conditional mean)
+   ===========================================================
+   */
+   real <lower=-1,upper=1>  thnv_f_gru_scalar_backward;  // The same here too!!!  
+   real <lower=-1,upper=1>  thnw_f_gru_scalar_backward;   
+   real <lower=-1,upper=1>  thnb_f_gru_scalar_backward;   
+   real <lower=-1,upper=1>  thnw_h_gru_scalar_backward;   
+   real <lower=-1,upper=1>  thnb_h_gru_scalar_backward;   
+   real <lower=-1,upper=1>  theta_h_gru_scalar_backward;
+   /*        
+      ---- GRU initial States Priors ----
+   */
+   // Initial hidden state for GRUs
+   real h_0_forward;
+   real h_0_backward;
+   /*  
+      ---- Scaled LSTM  Gate Parameters (MomentumRNN-like) ----
+      These are scalar versions of the weights for the various gates and cell states,
+      multiplied by epsilon and used in the momentum update step. 
+   */
+   // ===========================================================
+   //                LSTM parameters
+   // ===========================================================
+   real <lower=-1,upper=1>  thnv_d;    // Candidate cell state (input dependent)
+   real <lower=-1,upper=1>  thnw_d;    // Candidate cell state (hidden state dependent)
+   real <lower=-1,upper=1>  thnv_i;    // Input gate (input dependent)
+   real <lower=-1,upper=1>  thnw_i;    // Input gate (hidden state dependent)
+   real <lower=-1,upper=1>  thetv_o;   // Output gate (input dependent)
+   real <lower=-1,upper=1>  thnw_o;    // Output gate (hidden state dependent)
+   real <lower=-1,upper=1>  thnv_f;    // Forget gate (input dependent)
+   real <lower=-1,upper=1>  thnw_f;    // Forget gate (hidden state dependent)
+   real <lower=-1,upper=1>  thnb_d;    // Bias for candidate cell state
+   real <lower=-1,upper=1>  thnb_i;    // Bias for input gate
+   real <lower=-1,upper=1>  thnb_o;    // Bias for output gate
+   real <lower=-1,upper=1>  thnb_f;    // Bias for forget gate
+   real <lower=-1,upper=1>  W_out;     // Weights for the hidden LSTM hidden states (Non-Linear filtred residuals)
+   real <lower=-1,upper=1>  B_out;     // Linear eq bias
+   /*        
+      ---- LSTM initial States Priors ----
+   */
+   // Initial hidden and cell state for LSTM
+   real h_0;
+   real C_0;	
+   /* ---- Additive latent oscillator (marginalized) ---- */
+   real<lower=0, upper=1> osc_r;       // radial damping (0..1)
+   real<lower=0> osc_sigma_eta;        // process noise for oscillator state
+   real<lower=0> osc_sigma_eps;        // measurement noise (oscillator part)
+   real<lower=0> osc_sigma_nu;         // RW step size for omega
+   real osc_omega1;                    // initial angle (radians) 
+   vector[N] osc_omega;                // latent oscillator frequencies
+   vector<lower=0>[N] w;               // Student-t scale mixture weights
+}
+
+transformed parameters{
+    /* 
+       	---- This section declares all transformed parameters ----
+      Gegenbauer FARMA Coefficient (Transformed AR and MA Coefficients)
+    */ 
+    vector[p] phi_mean;   // The actual AR coefficients
+    vector[q] theta_mean; // The actual MA coefficients
+    /*
+              ---- Temporal Mean and Residuals ----
+        mu_mean_volatility: Conditional mean of the volatility 
+        at each time point, derived from GRU's hidden states on 
+        Gegenbauer-FARMA.
+    */
+    vector  [N] mu_mean;
+    //  Residuals (observed y minus conditional mean mu).
+    vector  [N] residuals;
+	real fourier_terms_1;  // Accumulator for period terms 
+    real fourier_terms_2;
+    real fourier_terms_3; 	
+    vector[N] periodic_component_sum; // vector storing fourier terms
+    /*  
+           ----  Gegenbauer Polynomial Coefficients ----
+       g_1: Coefficients Matrix of the Gegenbauer polynomial,
+       which capture long-memory dynamics.
+      
+       u_1: Related to the frequency parameter f1, used in Gegenbauer calculation.
+    */  
+    matrix[k, k+1] g_1;    // Gegenbauer coefficients for each frequency
+    vector[k] u_1;         // cos(2πf1)
+    /*
+	                 ---- Hidden Markov Model (HMM) Transition Matrix ----
+						  
+       'A' represents the transition probabilities between the two hidden states 
+	   (e.g., low and high volatility regimes).A[i, j] is the probability of 
+	   transitioning from state 'i' to state 'j'.p_remain[s] is the probability of staying in state 's'.
+	   
+	*/
+	matrix[2, 2] A;
+    /*	'probability' stores the normalized posterior probabilities of
+       	being in each state at each time point.
+	*/
+	vector[2] probability[N];
+	/*
+	                       ---- HMM Log-Likelihood for Each State ----
+       log_alpha[t, s] stores the log of the joint probability of the observations up to time 't'
+       and being in state 's' at time 't'. Used in the forward algorithm for HMM inference. 
+    */    
+    vector [2] log_alpha[N];
+	/*
+           
+		   ---- Sorted Regime-Specific Volatility Levels ----
+
+       The original GJR_GARCHX volatility `sigma` vector contains regime-dependent intercepts
+       for the log-volatility innovations (sigma[t]). However, without constraints,
+       their labels (e.g., "low" vs. "high" volatility) are exchangeable — leading
+       to label switching across MCMC chains.
+
+       We sort all GJR-GARCH terms  in ascending order to enforce an identifiability constraint,
+       ensuring that, for exemple: 
+	   
+           sigma_sorted[1] < sigma_sorted[2] , and etc...
+    
+	   This helps prevent multimodal posteriors and improves mixing in the HMM component.
+
+       All downstream computations (HMM, mu_regime, forecasts) use the sorted version.
+	
+    */
+	vector <lower=0.0> [2] sigma0_sorted;
+	vector <lower=0.0> [2] omega_sorted;
+	vector <lower=0.0> [2] alpha_sorted;
+	vector <lower=0.0> [2] psi_sorted;
+	vector <lower=0.0,upper=1> [2] beta_sorted;
+	vector <lower=-1, upper=1>  [2] phix_1_sorted;
+	vector <lower=-1, upper=1>  [2] phix_2_sorted;
+	vector <lower=-1, upper=1>  [2] phi_lstm_sorted;
+	//
+	vector [2] 	monday_centered;
+	vector [2] 	tuesday_centered;
+	vector [2] 	wednesday_centered;
+	vector [2] 	thursday_centered;
+	vector [2] 	friday_centered;
+	/*  
+	
+	   "week_effect_avg" represents the average of the five weekly effects (Monday–Friday) 
+	   in regime u. By subtracting m from each individual effect, we impose a zero-sum constraint
+       between the weekly effects. This centering prevents the weekday dummies
+       from altering the unconditional level of variance, ensuring stationarity and
+       better identifiability between intercept and seasonal effects.
+	*/
+	real week_effect_avg;
+    vector [N] residuals_sq;
+    vector [N] var_t;	
+	/*
+	                       ---- Model-Derived Parameters ----
+       Conditional Standard Deviation for each of the 2 HMM states, where sigma[t, state] represents 
+	   the conditional standard deviation of the residuals at time 't', given the system is in a 
+	   particular hidden state. This comes from the GJR-GARCHX component.
+	*/
+	// Conditional std dev
+	matrix <lower=0> [N,2] sigma;
+    //	
+	/*   
+         ---- Bidirectional GRU momentum vectors ----  
+    */
+    //  Corresponds to the update/reset gate ***(Forward)    
+    vector [N] v_g_f_gru_forward;
+    // Corresponds to the update/reset gate  ***(Forward)
+    vector [N] v_h_gru_forward;
+    //  Corresponds to the update/reset gate ***(Backward)  
+    vector [N] v_g_f_gru_backward;
+    // Corresponds to the update/reset gate  ***(Backward)  
+    vector [N] v_h_gru_backward; 
+    /*        
+                              ---- GRU States ----
+        g_f_gru: Forget/Update gate for the GRU.
+        h_gru: Hidden states of the GRU, which will be used in the mean component.
+    */
+    vector [N] g_f_gru_forward;
+    vector [N] h_gru_forward; 
+    vector [N] h_gru_forward_updated; 
+    vector [N] g_f_gru_backward;
+    vector [N] h_gru_backward;
+    vector [N] h_gru_backward_updated;
+    /*   
+                  ---- Concatenated Hidden State from Bidirectional GRU ----
+      
+	  Combines the forward and backward hidden states, often by averaging or concatenation.
+      This combined state summarizes information from both past and future contexts for each time point.
+  
+    */
+    vector [N] h_gru_concatenate;  
+    // 
+	/*  
+       ---- LSTM vectors declaration ---- 
+    */
+    // LSTM hidden state
+    vector [N] h;
+    // LSTM cell state
+    vector [N] C;
+    // LSTM candidate cell state
+    vector <lower=-1.0, upper=1.0> [N] n_d;
+    // LSTM input gate
+    vector <lower= 0.0, upper=1.0> [N] g_i;
+    // LSTM output gate
+    vector <lower= 0.0, upper=1.0> [N] g_o;
+    // LSTM forget gate
+    vector <lower= 0.0, upper=1.0> [N] g_f;
+    // LSTM momentum for output gate
+    vector [N] v_g_o;
+    // LSTM momentum for candidate cell state
+    vector [N] v_n_d;
+    // LSTM momentum for input gate
+    vector [N] v_g_i;
+    // LSTM momentum for forget gate
+    vector [N] v_g_f;
+    // LSTM activation layer 
+	vector [N] eta;
+	// Kalman filter state vectors (for log-lik marginalization)
+    vector[2] H;
+    vector[2] m;          // filtered mean
+    matrix[2,2] Pmat;     // filtered covariance
+	real c;               // cosine of current frequency
+    real s;               // sine of current frequency
+    matrix[2,2] Rmat;     // 2×2 rotation matrix
+	/*
+  	============================================================
+     Temporary scalars and vectors for Kalman update (used inside loop)
+    ============================================================
+    */
+	//
+    /*  
+	           ---- Predicted measurement (scalar). ----
+       This is the observation implied by the current state estimate.
+	*/
+    real yhat;
+    /*         
+	          ---- Regime-mixed conditional variance (scalar). ----
+       Weighted average of regime-specific variances omega², using smoothed probs.
+	*/
+    real regime_var;
+    /*    
+	          ---- Observation variance under Student-t scale mixture (scalar). ----
+                      Equals regime_var divided by latent precision w[t].
+	*/ 				  
+    real obs_var;
+    /*       
+	         ---- Total predictive variance (scalar). ----
+          Combines uncertainty from state estimate + observation noise.
+    */
+    real S;
+    /*     
+            ---- Kalman gain (2-dim vector). ----
+         Tells how much to adjust latent state (cos/sin) 
+         when seeing the innovation residuals.
+    */
+    vector[2] Kgain;
+    /*            
+	             ---- Accumulator for HMM Forward Algorithm ---- 
+        Used to sum log-probabilities for the HMM forward algorithm, 
+		helping to avoid numerical underflow.
+		
+    */
+	real accumulator[2];
+	// --- HMM Transition Matrix Initialization ---
+    // A[1,1] = p_remain[1] means P(State 1 -> State 1)
+    // A[1,2] = 1 - p_remain[1] means P(State 1 -> State 2)
+    // A[2,1] = 1 - p_remain[2] means P(State 2 -> State 1)
+    // A[2,2] = p_remain[2] means P(State 2 -> State 2)
+	//
+	A[1, 1] = inv_logit(p_remain[1]);
+	A[1, 2] = 1 - inv_logit(p_remain[1]);
+	A[2, 1] = 1 - inv_logit(p_remain[2]);
+	A[2, 2] = inv_logit(p_remain[2]);
+	/*
+    ===========================================================
+                    Transformation Coefficients
+    ===========================================================
+	*/
+	for (u in 1:2) {
+      week_effect_avg = (monday[u] + tuesday[u] + wednesday[u] +
+                         thursday[u] + friday[u]) / 5;
+      monday_centered[u]    = monday[u]    - week_effect_avg;
+      tuesday_centered[u]   = tuesday[u]   - week_effect_avg;
+      wednesday_centered[u] = wednesday[u] - week_effect_avg;
+      thursday_centered[u]  = thursday[u]  - week_effect_avg;
+      friday_centered[u]    = friday[u]    - week_effect_avg;
+    } 
+	/*	
+                 ----- Gegenbauer Coefficients Calculation -----
+    Calculates the coefficients for the Gegenbauer polynomial based on d_1 and f_1.
+    These coefficients determine the long-memory properties of the FARMA process.
+    */
+    for (i in 1:k) {
+      u_1[i]=  cos(2.0* pi() * f1[i]);
+      g_1[i, 1] = 1.0;
+      g_1[i, 2] = 2.0 * u_1[i] * d_1;
+      for (j in 3:(k+1)) {
+        g_1[i, j] = (2.0 * u_1[i] * ((j - 1) + d_1 - 1.0) * g_1[i, j - 1]
+        - ((j - 1) + 2.0 * d_1 - 2.0) * g_1[i, j - 2]) / (j - 1);
+      }
+    }
+	//
+    /*  
+         
+ 		                ---- Transformation of AR and MA Parameters ----
+                Calculate phi_mean from phi_raw (reflection coefficients)
+                This is a common algorithm (e.g., Durbin-Levinson)
+                for converting partial autocorrelations (phi_raw) to AR coefficients (phi_mean)
+				
+				Shumway, R. H., & Stoffer, D. S. (2017)
+	 
+    */
+    if (p > 0){
+      matrix[p, p] P; // Temporary matrix for algorithm
+      // Initialize the first reflection coefficient
+      P[1, 1] = phi_raw[1];
+      phi_mean[1] = P[1, 1];
+      // Compute for higher orders
+      for (i in 2:p) {
+        P[i, i] = phi_raw[i];
+        for (j in 1:(i-1)) {
+          P[i, j] = P[i-1, j] - P[i, i] * P[i-1, i-j];
+        }
+        for (j in 1:i) {
+          phi_mean[j] = P[i, j];
+        }
+      }
+    }
+    /* 
+     Calculate theta_mean from theta_raw (reflection coefficients for MA)
+     The process is analogous to AR coefficients for invertibility
+    */  
+    if (q > 0) {
+      matrix[q, q] Q; // Temporary matrix for algorithm
+      Q[1, 1] = theta_raw[1];
+      theta_mean[1] = Q[1, 1];
+      for (i in 2:q) {
+        Q[i, i] = theta_raw[i];
+        for (j in 1:(i-1)) {
+          Q[i, j] = Q[i-1, j] - Q[i, i] * Q[i-1, i-j];
+        }
+      for (j in 1:i) {
+        theta_mean[j] = Q[i, j];
+        }
+      }
+    }
+	/*
+        ---- Conditional mean. Initialize Bidirectional GRU States and Momentum for t=1 ----
+                Sets initial hidden and cell states to zero.
+           Sets initial forward and backward momentum  to zero.
+    */ 
+    // Forward terms   
+    v_g_f_gru_forward[1] = 0.0;
+    v_h_gru_forward[1] =   0.0;
+    v_g_f_gru_forward[1] =  (momentum * v_g_f_gru_forward[1] + epsilon*thnw_f_gru_scalar_forward*h_0_forward);
+    g_f_gru_forward[1]   =  inv_logit(v_g_f_gru_forward[1] + thnv_f_gru_scalar_forward*y[1] +  thnb_f_gru_scalar_forward);
+    v_h_gru_forward[1]   =  (momentum *v_h_gru_forward[1] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward[1] + h_0_forward));
+    h_gru_forward[1]     =   tanh(v_h_gru_forward[1] + theta_h_gru_scalar_forward*y[1]  + thnb_h_gru_scalar_forward);
+    h_gru_forward_updated[1] = (1- g_f_gru_forward[1])*h_0_forward +  g_f_gru_forward[1] *h_gru_forward[1];
+	// Backward terms 
+    v_g_f_gru_backward[1] = 0.0;
+    v_h_gru_backward[1] =   0.0;
+    v_g_f_gru_backward[1] =  (momentum * v_g_f_gru_backward[1] + epsilon*thnw_f_gru_scalar_backward*h_0_backward);
+    g_f_gru_backward[1]   =  inv_logit(v_g_f_gru_backward[1] + thnv_f_gru_scalar_backward*y[N] +  thnb_f_gru_scalar_backward);
+    v_h_gru_backward[1]   =  (momentum *v_h_gru_backward[1] + epsilon*thnw_h_gru_scalar_backward*(g_f_gru_backward[1] + h_0_backward));
+    h_gru_backward[1]     =  tanh(v_h_gru_backward[1] + theta_h_gru_scalar_backward*y[N]  + thnb_h_gru_scalar_backward);	
+    h_gru_backward_updated[1] = (1- g_f_gru_backward[1])*h_0_backward +  g_f_gru_backward[1] *h_gru_backward[1];  
+	/*
+        GRU update rule: (1 - update_gate) * previous_hidden_state + update_gate * candidate_hidden_state
+        Here, "g_f_gru_forward" and "g_f_gru_backward" are acting as the update gate.
+    */
+    //
+    /*
+                   --- Concatenate Bidirectional GRU Hidden States (for t = 1) ---
+                  Combines the forward hidden state  with the backward hidden state at time 't'
+     	  
+    */ 
+    h_gru_concatenate[1] =  gru_hidden_state_scalar*((h_gru_forward_updated[1] + h_gru_backward_updated[1])/2); 
+	/*
+		 Conditional mean (Gegenbauer-FARMAX) Process for t=1
+	*/
+    fourier_terms_1 = 0.0; // Initialize accumulator
+    if (k1 > 0) {
+       for (j in 1:min(1,k1)) { // If periodic components are specified
+		  fourier_terms_1 +=  alfa1[j] * sin((2*pi()*f1[j]) *(1)) + beta1[j] * cos((2*pi()*f1[j]) * (1));
+         }
+    }
+    periodic_component_sum[1] = fourier_terms_1;               // Assign after summing
+	mu_mean[1] = mu;                                           // Initialize with global mean
+	mu_mean[1] += periodic_component_sum[1];	               // Fourier terms
+	mu_mean[1] += jumps[1];                                    // jumps on the mean
+	mu_mean[1] += phi_mean[1]*(h_gru_concatenate[1]);          // AR 1 at time t=1
+	mu_mean[1] = swish(mu_mean[1] , beta_swish);
+    // Calculate unstandardized residual 
+    residuals[1] = y[1] - mu_mean[1];
+    /* 
+           ---- Main Time Series Loop (t=2 to N) ----
+    */
+    for(t in 2:N){
+      /*
+	                ---- Forward and Backward MomentumGRU Update within the loop ----
+          Computes momentum, gate, and hidden state for GRU at each time step,
+          using the previous hidden state (h_gru_forward[t-1]) and previous returns obs (y[t-1]).
+	
+	  */
+	  v_g_f_gru_forward[t] = (momentum * v_g_f_gru_forward[t-1] + epsilon*thnw_f_gru_scalar_forward*h_gru_forward[t-1]);
+	  g_f_gru_forward[t] = inv_logit(v_g_f_gru_forward[t] + thnv_f_gru_scalar_forward*y[t-1] + thnb_f_gru_scalar_forward);
+	  v_h_gru_forward[t] =  (momentum *v_h_gru_forward[t-1] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward[t] + h_gru_forward[t-1]));
+	  h_gru_forward[t] =  tanh(v_h_gru_forward[t] + theta_h_gru_scalar_forward*y[t-1] + thnb_h_gru_scalar_forward);
+	  h_gru_forward_updated[t] = (1- g_f_gru_forward[t])*h_gru_forward[t-1] +  g_f_gru_forward[t] *h_gru_forward[t]; 
+	  /*            
+                	---- backward MomentumGRU Update within the loop ----
+          Computes momentum, gate, and hidden state back GRU at each time step,
+          using the previous hidden state (h_gru_backward[t-1]) and previous inverted returns obs (y[N-t]).
+    
+	  */
+	  v_g_f_gru_backward[t] = (momentum * v_g_f_gru_backward[t-1] + epsilon*thnw_f_gru_scalar_backward*h_gru_backward[t-1]);
+      g_f_gru_backward[t] = inv_logit(v_g_f_gru_backward[t] + thnv_f_gru_scalar_backward*y[max(N-t+1,1)] + thnb_f_gru_scalar_backward);
+      v_h_gru_backward[t] =  (momentum *v_h_gru_backward[t-1] + epsilon*thnw_h_gru_scalar_backward*(g_f_gru_backward[t] + h_gru_backward[t-1]));
+      h_gru_backward[t] =  tanh(v_h_gru_backward[t] + theta_h_gru_scalar_backward*y[max(N-t+1,1)] + thnb_h_gru_scalar_backward);
+      h_gru_backward_updated[t] = (1- g_f_gru_backward[t])*h_gru_backward[t-1] +  g_f_gru_backward[t] *h_gru_backward[t];  
+	}	
+    /*
+                   --- Concatenate Bidirectional GRU Hidden States (for t > 1) ---
+                  Combines the forward hidden state  with the backward hidden state at time 't'
+     	  
+    */
+    for(t in 2:N){  
+          h_gru_concatenate[t] =  gru_hidden_state_scalar*((h_gru_forward_updated[t] + h_gru_backward_updated[t])/2); 
+	}  
+    /*
+		 Conditional mean (Gegenbauer-FARMAX) Process for t=2
+	*/
+    mu_mean[2]  = mu; 
+	fourier_terms_2 = 0.0; 
+    if (k1 > 0) {
+       for (j in 1:min(1,k1)) { // If periodic components are specified
+		  fourier_terms_1 +=  alfa1[j] * sin((2*pi()*f1[j]) *(2)) + beta1[j] * cos((2*pi()*f1[j]) * (2));
+         }
+    }
+	periodic_component_sum[2] = fourier_terms_2;  
+    mu_mean[2] += periodic_component_sum[2]; 
+    if (k > 0)  for (i in 1:min(1,k)) { // If Gegenbauer (long memory) component is specified
+      for (mm in 1:min(1, k)) {
+        mu_mean[2]   += g_1[i, mm + 1] * y[2 - mm]; // Gegenbauer terms on observed terms.
+        }
+    }
+    if(p > 0) for (i in 1:min(1,p)){ // If AR component is specified
+	   mu_mean[2]   += phi_mean[i]*(h_gru_concatenate[2-i]); // AR terms on past observed terms.
+	}
+    if(q > 0) for(j in 1:min(1,q)){ // If MA component is specified
+        mu_mean[2]   += theta_mean[j] * residuals[2-j]; // MA terms on past residuals.
+    }
+    mu_mean[2]   += kpi*signals[1]; // (Buy=+1, hold=0, Sell=-1 influence on the mean)
+	mu_mean[2]   += jumps[2]; // jumps on the mean
+	mu_mean[2]   += price_action_3 * x_3[1]; // Fast EMA
+    mu_mean[2]   += price_action_4 * x_4[1]; // Slow EMA
+    mu_mean[2]   += price_action_5 * x_5[1]; // Suport
+    mu_mean[2]   += price_action_6 * x_6[1]; // Resistence 
+    mu_mean[2]   = swish(mu_mean[2]  , beta_swish);
+    // Calculate unstandardized residual 
+    residuals[2] = y[2] - mu_mean[2];
+    /*
+           
+		         ---- Sorted Regime-Specific Log-Volatility Levels ----
+
+       The original `sigma_0` and others vectors contain regime-dependent intercepts
+       for the log-volatility innovations (sigma_0). However, without constraints,
+       their labels (e.g., "low" vs. "high" volatility) are exchangeable — leading
+       to label switching across MCMC chains.
+
+       We sort 'sigma_0_sorted' and others in ascending order to enforce an identifiability constraint,
+       ensuring that:
+	   
+                 sigma_0_sorted[1] < sigma_0_sorted[2]
+    
+	   This helps prevent multimodal posteriors and improves mixing in the HMM component.
+
+       All downstream computations (HMM, mu_regime, forecasts) use the sorted version.
+	
+    */
+    sigma0_sorted = sort_asc(sigma0);	
+	omega_sorted = sort_asc(omega);
+    alpha_sorted = sort_asc(alpha);
+	psi_sorted = sort_asc(psi);
+	beta_sorted = sort_asc(beta);
+	phix_1_sorted = sort_asc(phix_1);
+    phix_2_sorted = sort_asc(phix_2);
+	phi_lstm_sorted = sort_asc(phi_lstm);
+	//
+	/*
+             ---- GJR-GARCHX (1,1)  calculations at t=1 ---- 	
+    */
+	for (j in 1:2) {	
+      residuals_sq[1] = pow(sigma0_sorted[j], 2);
+	  //
+	  v_g_o[1] = 0.0;
+      v_n_d[1] = 0.0;
+      v_g_i[1] = 0.0;
+      v_g_f[1] = 0.0;
+      v_g_o[1] = (momentum * v_g_o[1] + epsilon*thetv_o*h_0);
+      v_n_d[1] = (momentum * v_n_d[1] + epsilon*thnv_d*h_0);
+      v_g_i[1] = (momentum * v_g_i[1] + epsilon*thnv_i*h_0);
+      v_g_f[1] = (momentum * v_g_f[1] + epsilon*thnv_f*h_0);
+      g_o[1]  = inv_logit(v_g_o[1] + thnw_o*residuals_sq[1] + thnb_o);
+      n_d[1]  = tanh(v_n_d[1] + thnw_d*residuals_sq[1] + thnb_d);
+      g_i[1]  = inv_logit(v_g_i[1] + thnw_i*residuals_sq[1] + thnb_i);
+      g_f[1]  = inv_logit(v_g_f[1] + thnw_f*residuals_sq[1] + thnb_f);
+      C[1] =    g_i[1] *n_d[1]  + g_f[1] *C_0;
+      h[1] =    g_o[1]* tanh(C[1]);
+      eta[1] =  W_out*h[1] + B_out;	  
+	  // Baseline GJR-GARCH structure
+      var_t[1] =  omega_sorted[j] 
+	            + alpha_sorted[j] *residuals_sq[1]
+				+ beta_sorted[j] * pow(sigma0_sorted[j],2);
+	  // Long-Memory LSTM filter 
+	  var_t[1] += phi_lstm_sorted[j]*eta[1];
+	  // Days-of-the-week dummies
+	  var_t[1]  += monday_centered[j]* date[1,1] + tuesday_centered[j]*date[1,2] + wednesday_centered[j]*date[1,3]
+	  + thursday_centered[j]*date[1,4] + friday_centered[j]*date[1,5];
+	  //
+	  var_t[1]   = ReLU(var_t[1]);
+      sigma[1,j] = sqrt(var_t[1]);
+      /*        
+	                       ---- HMM Forward Algorithm Initialization for t=1 ----
+           Calculates the initial log-probability of being in each state, given the first observations.
+           Assumes equal initial state probabilities (0.5).
+	  */
+      log_alpha[1, j] = log(0.5) + student_t_lpdf(residuals[1] |3.82426, 0.0 , sigma[1,j]);
+    }
+	// Convert log-probs to regime probabilities using softmax
+	probability[1] = softmax(to_vector(log_alpha[1]));
+	/*
+                    ---- GJR-GARCHX (1,1)  calculations at t=2  ---- 	
+    */
+	residuals_sq[2] = pow(residuals[1], 2);
+	//
+	v_g_o[2] = (momentum * v_g_o[1] + epsilon*thetv_o*h[1]);
+    v_n_d[2] = (momentum * v_n_d[1] + epsilon*thnv_d*h[1]);
+    v_g_i[2] = (momentum * v_g_i[1] + epsilon*thnv_i*h[1]);
+    v_g_f[2] = (momentum * v_g_f[1] + epsilon*thnv_f*h[1]);
+    g_o[2]  = inv_logit(v_g_o[1] + thnw_o*residuals_sq[1] + thnb_o);
+    n_d[2]  = tanh(v_n_d[1] + thnw_d*residuals_sq[1] + thnb_d);
+    g_i[2]  = inv_logit(v_g_i[1] + thnw_i*residuals_sq[1] + thnb_i);
+    g_f[2]  = inv_logit(v_g_f[1] + thnw_f*residuals_sq[1] + thnb_f);
+    C[2] =    g_i[2] *n_d[2]  + g_f[2] *C[1];
+    h[2] =    g_o[2]* tanh(C[2]);
+    eta[2] =  W_out*h[2] + B_out;	
+	//       
+    for (j in 1:2) { // Current state
+       var_t[2] = omega_sorted[j]
+            + alpha_sorted[j] * residuals_sq[2]
+            + beta_sorted[j] * pow(sigma[1,j],2);
+	   if (use_x1 == 1){
+	        var_t[2] += phix_1_sorted[j] * x_1[1];
+	   }
+	   if (use_x2 == 1){
+            var_t[2] += phix_2_sorted[j] * x_2[1];
+	   }
+	   // Leverage effect (negative residuals amplify variance)
+       if (residuals[1] < 0){
+            var_t[2] += psi_sorted[j] * residuals_sq[2];
+	   }
+       // Long-Memory LSTM filter 
+	   var_t[2] += phi_lstm_sorted[j]*eta[2];
+	   // Days-of-the-week dummies
+	   var_t[2]  += monday_centered[j]* date[2,1] + tuesday_centered[j]*date[2,2] + wednesday_centered[j]*date[2,3]
+	   + thursday_centered[j]*date[2,4] + friday_centered[j]*date[2,5];
+	   //
+	   var_t[2] = ReLU(var_t[2]);
+    sigma[2,j] = sqrt(var_t[2]);
+   }  
+   /*     ---- HMM Forward Algorithm for t=2 ----       */
+   for(j in 1:2) { // Current state
+	   for(i in 1:2) { // Previous state
+	   accumulator[i] = log_alpha[1, i] + // Log-probability from previous observation and state i
+	                       log(A[i, j]) + // Log-transition probability from i to j
+	                       student_t_lpdf(residuals[2] |3.82426, 0.0, sigma[2,j]);  // Log-likelihood of residual given previous state i's volatility.
+         }	 
+	     log_alpha[2, j] = log_sum_exp(accumulator); // Sums log-probabilities for all paths leading to state j
+	}
+	probability[2] = softmax(to_vector(log_alpha[2])); // Normalizes to get posterior probabilities for current time 't'.  
+	/*	  
+	      Conditional mean (Gegenbauer-FARMAX) Process for t=[3,N]
+	*/
+    for(t in 3:N){
+      fourier_terms_3 = 0.0;
+      if (k1 > 0) {
+        for (j in 1:min(t-1,k1)){
+         fourier_terms_2 += alfa1[j] * sin((2*pi()*f1[j]) *(t)) + beta1[j] * cos((2*pi()*f1[j]) * (t));
+         }
+      }
+      periodic_component_sum[t] = fourier_terms_3; 
+      mu_mean[t]   = mu;  
+      mu_mean[t] += periodic_component_sum[t];  
+      if (k > 0) for (i in 1:min(t-1,k)){
+         for (mm in 1:min(t-1,k)) {
+           mu_mean[t] += g_1[i, mm + 1] * y[t - mm];
+         }
+      }
+      if(p > 0) for (i in 1:min(t-1,p)){
+	     mu_mean[t] += phi_mean[i]*(h_gru_concatenate[t-i]);
+	  }
+      if(q > 0) for(j in 1:min(t-1,q)){ 
+         mu_mean[t] += theta_mean[j] * residuals[t-j];
+      }
+      mu_mean[t] += kpi*signals[t-1];
+      mu_mean[t] += jumps[t]; 
+      mu_mean[t] += price_action_3 * x_3[t-1]; // Fast EMA
+      mu_mean[t] += price_action_4 * x_4[t-1]; // Slow EMA
+      mu_mean[t] += price_action_5 * x_5[t-1]; // Suport
+      mu_mean[t] += price_action_6 * x_6[t-1]; // Resistence
+	  mu_mean[t] = swish(mu_mean[t]   , beta_swish);
+	  residuals[t] = y[t] - mu_mean[t];
+	  /*         
+                    ---- GJR-GARCHX calculations ----
+                        (Regime shift for t=[3,N])					
+      */
+	  residuals_sq[t] = pow(residuals[t-1], 2);
+      //
+	  v_g_o[t] = (momentum * v_g_o[t-1] + epsilon*thetv_o*h[t-1]);
+      v_n_d[t] = (momentum * v_n_d[t-1] + epsilon*thnv_d*h[t-1]);
+      v_g_i[t] = (momentum * v_g_i[t-1] + epsilon*thnv_i*h[t-1]);
+      v_g_f[t] = (momentum * v_g_f[t-1] + epsilon*thnv_f*h[t-1]);
+      g_o[t]  = inv_logit(v_g_o[t-1] + thnw_o*residuals_sq[t-1] + thnb_o);
+      n_d[t]  = tanh(v_n_d[t-1] + thnw_d*residuals_sq[t-1] + thnb_d);
+      g_i[t]  = inv_logit(v_g_i[t-1] + thnw_i*residuals_sq[t-1] + thnb_i);
+      g_f[t]  = inv_logit(v_g_f[t-1] + thnw_f*residuals_sq[t-1] + thnb_f);
+      C[t] =    g_i[t] *n_d[t]  + g_f[t] *C[t-1];
+      h[t] = g_o[t]* tanh(C[t]);
+      eta[t] = W_out*h[t] + B_out;		  
+      //  
+	  for (j in 1:2) { // Current state
+	   	 // Baseline GJR-GARCH structure
+         var_t[t] = omega_sorted[j]
+            + alpha_sorted[j]  * residuals_sq[t]
+            + beta_sorted[j]   * pow(sigma[t - 1,j],2);
+		 // Exogenous regressors (GARCHX terms)
+	     if (use_x1 == 1){
+	        var_t[t] += phix_1_sorted[j] * x_1[t-1];
+	     }
+	     if (use_x2 == 1){
+            var_t[t] += phix_2_sorted[j] * x_2[t-1];
+	     }
+		 // Leverage effect (negative residuals amplify variance)
+         if (residuals[t-1] < 0){
+            var_t[t] += psi_sorted[j] * residuals_sq[t];
+	     }
+		 // Long-Memory LSTM filter 
+		 var_t[t]  += phi_lstm_sorted[j]*eta[t];
+		 // Days-of-the-week dummies
+		 var_t[t]  += monday_centered[j]* date[t,1] + tuesday_centered[j]*date[t,2] + wednesday_centered[j]*date[t,3]
+	     + thursday_centered[j]*date[t,4] + friday_centered[j]*date[t,5];
+		 //
+		 var_t[t] = ReLU(var_t[t]);
+         sigma[t,j] = sqrt(var_t[t]);       // std deviation	
+       }
+       //
+       /*		               ---- HMM Forward Algorithm Update ----
+              Calculates log_alpha[t,j] (log-probability of path ending in state 'j' at time 't')
+              by summing over all possible previous states 'i'.
+              log_alpha[t, j] = log_sum_exp(log_alpha[t-1, i] + log(A[i,j]) + normal_lpdf(residuals[t] | 0, Sigma[t,j]))
+	   */
+	   for(j in 1:2) { // Current state
+	     for(i in 1:2) { // Previous state
+	          accumulator[i] = log_alpha[t-1, i] + // Log-probability from previous observation and state i
+	                       log(A[i, j]) + // Log-transition probability from i to j
+	                       student_t_lpdf(residuals[t] | 3.82426, 0.0 , sigma[t,j]);  // Log-likelihood of residual given previous state i's volatility.
+           }						   
+	       log_alpha[t, j] = log_sum_exp(accumulator); // Sums log-probabilities for all paths leading to state j
+	     }
+	     probability[t] = softmax(to_vector(log_alpha[t])); // Normalizes to get posterior probabilities for current time 't'.
+	}
+	/*
+     ====================================================================
+               KALMAN FILTER WITH LATENT OSCILLATOR
+     ====================================================================
+
+     Purpose:
+     --------
+   
+       This block tracks a hidden **cyclical component** in returns
+       that is not explained by AR/MA, GRU, GARCH, or jumps.
+
+     Representation:
+     ---------------
+   
+          * The oscillator state is 2D: [cos(θ_t), sin(θ_t)]'.
+            Think of it as a point on the unit circle.
+
+          * At each time t, the state rotates by angle omega[t] (frequency).
+            That means the oscillator evolves as:
+         
+		      "x_{t+1} = R(omega[t]) * x_t";
+           
+		   where R(omega[t]) is a 2×2 rotation matrix.
+
+         * Only the first coordinate (cos component) contributes
+           to observed returns. This is extracted with H = [1, 0].
+
+     Kalman filter role:
+     -------------------
+   
+        * m      = filtered mean estimate of oscillator state
+        * Pmat   = covariance (uncertainty) of the estimate
+        * Kgain  = Kalman gain for updating state estimates
+
+     Workflow:
+     ---------
+   
+        1. Start with prior state (m, Pmat).
+        2. Predict observation mean yhat = dot_product(H, m).
+        3. Mix regime variances -> total obs variance S.
+        4. Update state (m, Pmat) given residuals[t] and S.
+        5. Propagate oscillator forward by rotating with omega[t],
+           applying damping (osc_r), and adding process noise
+           (osc_sigma_eta).
+
+     Interpretation:
+     ---------------
+   
+        * In-sample: the filter extracts "hidden cycles" in residuals.
+        * Out-of-sample: we propagate the oscillator state stochastically,
+          so forecasts inherit cyclical dynamics.
+
+     Intuition:
+     ----------
+   
+        * The AR/MA/GRU/GARCH parts explain most of the structure.
+        * The Kalman oscillator "soaks up" leftover oscillations,
+          giving a smoother, cyclical signal.
+        * Forecasts therefore include both: (a) learned cycles,
+          and (b) learned cycles +  random shocks.
+   */
+   //
+   /* 
+   ======================================================================
+       ---- Initialization of Kalman filter for latent oscillator ----
+   ======================================================================
+   */ 
+   /* 
+      H is the observation matrix (dimension 2->1).  
+      Here H = [1, 0], meaning we only observe the cosine component 
+      (first state dimension) of the latent oscillator.
+   */
+   H[1] = 1.0;        // observation matrix: pick out cosine component
+   H[2] = 0.0;        // ignore sine component
+   /* 
+	  Initialize latent state mean "m" = [0, 0].  
+      This is the prior guess for the oscillator's hidden state 
+      (cosine & sine coordinates at time t=1).
+   */
+   m = rep_vector(0.0, 2);     // diffuse prior mean [cos,sin]
+   /* 
+      Initialize state covariance "Pmat" as diagonal with variance=5.  
+      This encodes uncertainty about the initial oscillator state.
+   */
+   Pmat = diag_matrix(rep_vector(5.0, 2));    // large prior covariance
+   /*
+   ======================================================================
+       ---- One full Kalman pass over observed sample t=[1,N] ----
+ 
+    (executed in TRANSFORMED PARAMETERS)
+    NOTE: no `target += ...` increments here — this is *just* computing  
+	filtered state trajectories (m, Pmat) to reuse later.
+    ======================================================================
+   */
+   for (tt in 1:N) {
+     /*    
+        	 ---- 1. One-step-ahead prediction ----
+         Predicted measurement from oscillator state:
+		      oscillator contribution (prior mean)
+     */
+     yhat = dot_product(H, m);      // (since H=[1,0], yhat ≈ current cosine component of state)
+     /* 
+      ---- 2. Observation variance (mixing HMM regimes + t mixture) ----
+            Weighted, mixed,  variance across volatility regimes:
+			    (weighted avg. of omega² across HMM states)
+	 */
+     regime_var = probability[tt,1] * square(sigma[tt,1])
+                  + probability[tt,2] * square(sigma[tt,2]);   // Mixed regime variance (weighted avg. of omega² across HMM states)
+     /* 
+     	 Student-t scale mixture: divide variance by latent precision w[tt]
+              (Conditional obs variance under Student-t mixture)	
+     */
+     obs_var = regime_var / w[tt];
+     /*    Total predictive variance = state uncertainty + observation noise  */
+     S = dot_product(H, Pmat * H) + obs_var;
+     /*      
+             	 ---- 3. Kalman update ----   
+       Kalman gain: tells how much to adjust state estimate with new data
+	        (how much to adjust oscillator state given y_t)
+	   
+	 */
+     Kgain = (Pmat * H) / S;
+     /*  Update latent mean given residual, innovations,  (obs - predicted)  */
+     m = m + Kgain * (residuals[tt] - yhat);
+     /*  Update covariance: shrink uncertainty in direction of observation  */
+     Pmat = (diag_matrix(rep_vector(1.0,2)) - Kgain * H') * Pmat;
+     /*    
+     	 ---- 4. State propagation (latent oscillator dynamics) ----
+     
+	      Rotate the state vector forward by angle osc_omega[tt],
+          then apply radial damping osc_r, then add process noise.
+     */
+     if (tt < N) {
+       c = cos(osc_omega[tt]);
+       s = sin(osc_omega[tt]);
+       Rmat[1,1] = c;   Rmat[1,2] = -s;
+       Rmat[2,1] = s;   Rmat[2,2] =  c;
+       // Propagate mean: rotate & shrink by damping
+       m = osc_r * (Rmat * m);
+       // Propagate covariance: rotate, damp, then add process noise
+       Pmat = osc_r * (Rmat * Pmat * (osc_r * Rmat'))
+         + square(osc_sigma_eta) * diag_matrix(rep_vector(1.0,2));
+       }
+    } // end Kalman loop
+}
+
+
+model {
+   /*   
+             ---- Scaling factor for bidirectional GRU hidden states. ----
+   
+           Constrained [1,2] to prevent runaway amplification;
+           prior shrinks toward 1.0 so GRU acts as a mild adjustment
+           unless data supports stronger influence.
+   
+   */
+   gru_hidden_state_scalar  ~ normal(1,0.25) T[1,2]; 
+   /*  ---- Jump Components on the mean 
+       ( Soft Spike-and-slab “continuous”)   ---- */
+   //
+   /* ---- Informed priors according to Extreme Value Analysis (EVA) ----
+      sigma_spike ≈ 0.20, sigma_slab ≈ 0.18, p_jump ≈ 0.054
+   */
+   sigma_spike ~ normal(0.20, 0.2) T[0,];  
+   sigma_slab  ~ normal(0.18, 0.5) T[0,];   
+   //
+   /*    
+       Jump probability "pi_z" Beta with mean  ~ 0.054
+   */
+   pi_z ~ beta(5, 88);
+   /*  ---- zero-mean normal marginalized spike-and-slab prior 
+            with a var_tiance that depends on pi_z       ---- */
+   for (t in 1:N){
+      target += log_mix(pi_z,
+                      normal_lpdf(jumps[t] | 0, sigma_slab),
+                      normal_lpdf(jumps[t] | 0, sigma_spike));
+   }
+   /* 
+                        ---- momentum should evolve smoothly ----
+						
+      Encourages the model to learn slow-moving, stable momentum patterns in volatility, 
+      which is plausible for financial time series where latent dynamics often evolve gradually.
+
+      Centered around 0.9, but openned to be anywhere between 0.8 and 1.0. 
+      Helping to get persistent temporal dependencies.
+	  
+   */
+   momentum ~ normal(0.9, 0.05) T[0,1];  
+   epsilon ~ beta(2, 2);     // "uniform-ish" over [0,1]
+   //  Beta Coefficient for swish 
+   beta_swish ~ normal(0.00, 0.10) T[0,];
+   /*  
+                ---- Priors for Fundamental Analysis KPI effects: ----
+       Hierarchical priors allow the  kpi effects  to share strength,
+	   improving estimation.
+   */
+   /*  
+       mean for KPI signals 
+   */
+   mean_kpi ~ normal(0.0,0.20);
+   /*   
+       Standard deviations for kpi effect priors, truncated at 0.
+   */
+   sigma_kpi ~ student_t(3, 0, 0.20) T[0,];
+   /*  Realized effects shrink toward hierarchical means */
+   kpi ~ normal(mean_kpi,sigma_kpi);
+   /*   ---- Priors for Price Action KPI effects: ---- */ 
+   mean_x_3  ~ normal(0.0,0.20);
+   mean_x_4  ~ normal(0.0,0.20);
+   mean_x_5  ~ normal(0.0,0.20);
+   mean_x_6  ~ normal(0.0,0.20);
+   /*   
+       * Standard deviations 
+   */
+   sigma_x_3 ~ student_t(3, 0, 0.20) T[0,];
+   sigma_x_4 ~ student_t(3, 0, 0.20) T[0,];
+   sigma_x_5 ~ student_t(3, 0, 0.20) T[0,];
+   sigma_x_6 ~ student_t(3, 0, 0.20) T[0,];
+   /*  Realized effects for Price Action KPIs. */
+   price_action_3 ~ normal(mean_x_3,sigma_x_3); 
+   price_action_4 ~ normal(mean_x_4,sigma_x_4); 
+   price_action_5 ~ normal(mean_x_5,sigma_x_5); 
+   price_action_6 ~ normal(mean_x_6,sigma_x_6); 
+   //   
+   /*
+       * Prior for the mean (mu)      
+   */
+   mu ~  normal(0, 0.05) T[-1,+1]; 
+   //
+   /* --- Fourier shrinkage, helping avoid overfitting wavy noise. --- */
+   if (k1 > 0){
+     for (j in 1:k1) { 
+       alfa1[j] ~ double_exponential(0.00, 0.25 / k1); // Prior for sine parameters
+       beta1[j] ~ double_exponential(0.00, 0.25 / k1); // Prior for cosine parameters
+     }
+   }
+   /*  ---- HMM Transition Probabilities ----     */
+   p_remain ~ beta(20, 1);  // High persistence of remaining in a state
+   /*  
+            ---- Priors for  MomentumLSTM Scalar Parameters ----
+      These are given standard normal priors, typical for neural network weights/biases. 
+   */
+   // ===========================================================
+   // LSTM Scalar Priors for Stochastic Volatility 
+   // =========================================================== 
+   C_0 ~ normal(0.0,2.00);            // Initial cell state
+   h_0 ~ normal(0.0,2.00);            // Initial hidden state   
+   thetv_o ~ normal(0.0,2.0);         // Output gate momentum vector
+   thnw_o  ~ normal(0.0,2.0);         // Output gate weight
+   thnb_o  ~ normal(0.0,2.0);         // Output gate bias
+   thnv_d  ~ normal(0.0,2.0);         // Cell state candidate momentum vector
+   thnw_d  ~ normal(0.0,2.0);         // Cell candidate weight
+   thnb_d  ~ normal(0.0,2.0);         // Cell candidate bias
+   thnv_i  ~ normal(0.0,2.0);         // Input gate momentum
+   thnw_i  ~ normal(0.0,2.0);         // Input gate weight
+   thnb_i  ~ normal(0.0,2.0);         // Input gate bias
+   thnv_f  ~ normal(0.0,2.0);         // Forget gate momentum
+   thnw_f  ~ normal(0.0,2.0); 
+   /*  
+       Forget Gate Bias weight 
+          encourages memory retention (sigmoid(1) ≈ 0.73)
+   */
+   thnb_f  ~ normal(1.0,0.5);
+   // ===========================================================
+   // Linear Output Layer for LSTM hidden states
+   // =========================================================== 
+   W_out ~ normal(0.0, 0.1);              //  Hidden State Candidate Weights 
+   /*
+         The bias acts as a shift in the Softplus activation function. Unlike weights (W_out), 
+		 which are multiplied by features (hidden states) and require strong regularization, 
+		 the bias is a fixed term.Thus, it is crucial to give the bias a larger scale , 
+		 such as 0.20, to make it less  constrained. This allows the model to have the 
+		 necessary flexibility to find the ideal equilibrium point for nonlinear correction, 
+		 without being overly restricted by a rigid a priori belief.
+   */
+   B_out ~ normal(0.0, 0.2);  
+   /*  
+                  ---- Priors for MomentumGRU  Scalar Parameters ----
+     These are given standard normal priors, typical for neural network weights/biases. 
+   */
+   // ===========================================================
+   // Bidirectional Momentum-GRU Priors (Forward)
+   // ===========================================================  
+   h_0_forward ~ normal(0.0,2.00);                 // Initial hidden state prior 
+   theta_h_gru_scalar_forward ~ normal(0.0,2.0);   // GRU hidden state transformation
+   thnv_f_gru_scalar_forward ~  normal(0.0,2.0);   // Momentum vector (v) forward
+   thnw_f_gru_scalar_forward ~  normal(0.0,2.0);   // Weighting for forward GRU update
+   /*  
+       ---- Bias term for forward GRU update ----
+     encourages memory retention (sigmoid(1) ≈ 0.73)
+   */
+   thnb_f_gru_scalar_forward ~  normal(1.0,0.5);   // Bias term for forward GRU update  
+   thnw_h_gru_scalar_forward ~  normal(0.0,2.0);   // Weighting for hidden (h) update
+   thnb_h_gru_scalar_forward ~  normal(0.0,2.0);   // Bias term for hidden (h) update
+   // ===========================================================
+   // Bidirectional Momentum-GRU Priors (Backward)
+   // ===========================================================  
+   h_0_backward ~ normal(0.0,2.00);  
+   theta_h_gru_scalar_backward ~ normal(0.0,2.0);  // Same here for backward terms!
+   thnv_f_gru_scalar_backward  ~ normal(0.0,2.0); 
+   thnw_f_gru_scalar_backward  ~ normal(0.0,2.0); 
+   thnb_f_gru_scalar_backward  ~ normal(1.0,0.5);  
+   thnw_h_gru_scalar_backward  ~ normal(0.0,2.0); 
+   thnb_h_gru_scalar_backward  ~ normal(0.0,2.0);
+   /*   
+                 ---- FARMA AR and MA Parameters ----
+       Priors for the raw parameters (reflection coefficients)
+       Often a symmetric prior  for each phi_raw[i] and theta_raw[i]
+   */
+   if (p > 0) {
+    for (i in 1:p) {
+      phi_raw[i] ~ normal(0,2)T[-1,1];  
+     }
+   }
+   if (q > 0) {
+     for (i in 1:q) {
+       theta_raw[i] ~ normal(0,2)T[-1,1]; 
+     }
+   }
+   for (u in 1:2) {
+      // 
+      /*                   ---- Priors for daily effects: ----
+          Hierarchical priors allow the daily effects  to share strength,
+	      improving estimation particularly if some weekdays have less data or high variability.
+      */   
+      mean_monday[u] ~  normal(0.0, u == 1 ? 0.10 : 0.25);
+      mean_tuesday[u] ~ normal(0.0, u == 1 ? 0.10 : 0.25);
+      mean_wednesday[u] ~ normal(0.0, u == 1 ? 0.10 : 0.25);
+      mean_thursday[u] ~ normal(0.0, u == 1 ? 0.10 : 0.25);
+      mean_friday[u] ~ normal(0.0, u == 1 ? 0.10 : 0.25);
+      /* 
+                 ---- Standard deviations for daily effect priors. ---- 
+        It lets the model occasionally explore larger values if the data demand it,
+        allowing robust shrinkage but with some tolerance for big effects 		
+      */
+      sigma_monday[u] ~ student_t(3, 0, u == 1 ? 0.10 : 0.30) T[0,]; 
+      sigma_tuesday[u] ~ student_t(3, 0, u == 1 ? 0.10 : 0.30) T[0,];
+      sigma_wednesday[u] ~ student_t(3, 0, u == 1 ? 0.10 : 0.30) T[0,];
+      sigma_thursday[u] ~ student_t(3, 0, u == 1 ? 0.10 : 0.30) T[0,];
+      sigma_friday[u] ~ student_t(3, 0, u == 1 ? 0.10 : 0.30) T[0,];
+      /*  
+       * Individual daily  effects drawn from their respective hierarchical priors.
+      */
+      monday[u] ~ normal(mean_monday[u] ,sigma_monday[u]);
+      tuesday[u] ~ normal(mean_tuesday[u] ,sigma_tuesday[u]);
+      wednesday[u] ~ normal(mean_wednesday[u] ,sigma_wednesday[u]);
+      thursday[u] ~ normal(mean_thursday[u] ,sigma_thursday[u]);   
+      friday[u] ~ normal(mean_friday[u],sigma_friday[u]);
+      /*     
+                                   ---- GJR-GARCH Parameters ---- 
+								   
+        Omega (baseline var_tiance level):
+        This prior reflects our belief about the unconditional volatility in each regime.
+   
+          - Low-volatility regime (u == 1): Prior ~ Normal(0.005, 0.002), 
+            representing calm market periods with small base volatility.
+		 
+          - High-volatility regime (u == 2): Prior ~ Normal(0.03, 0.005),
+            allowing much higher var_tiance during crises or turbulent conditions.
+		 
+		 
+        The tighter prior for regime 1 and broader support for regime 2 improve regime separability.
+        Truncated at 0 to ensure positive var_tiance.
+   
+             *  omega[1] ~ normal(0.005, 0.002) (low-vol)
+             *  omega[2] ~ normal(0.03, 0.005) (high-vol)
+		 
+       */
+       omega[u] ~ normal(u == 1 ? 0.005 : 0.03, u == 1 ? 0.002 : 0.005) T[0,]; 
+       /*  
+	 
+       Alpha (ARCH effect):
+       Controls how much recent squared shocks (residuals^2) influence current volatility.
+	 
+         - Low-vol regime: Prior ~ Normal(0.03, 0.01), implies low reactivity.
+	   
+         - High-vol regime: Prior ~ Normal(0.10, 0.03), allowing strong responses to market shocks.
+	   
+       These priors reflect the intuition that turbulent markets react more sharply to recent movements.
+       Truncated at 0 for positivity.
+	   */
+       alpha[u] ~ normal(u == 1 ? 0.03 : 0.10, u == 1 ? 0.01 : 0.03) T[0,];
+       /* 
+	
+       Psi (GJR-GARCH leverage effect):
+       Captures the asymmetric impact of negative returns on volatility (leverage effect).
+	  
+        - Low-vol regime: Prior ~ Normal(0.01, 0.005), implying weak asymmetry.
+		
+        - High-vol regime: Prior ~ Normal(0.12, 0.03), enabling strong leverage effects.
+		
+       This reflects the "bad news has stronger impact" behavior common in crisis regimes.
+       Truncated at 0 to ensure contribution only when residuals are negative.	  
+       */
+       psi[u] ~ normal(u == 1 ? 0.01 : 0.12, u == 1 ? 0.005 : 0.03) T[0,];
+       /*
+  
+       Regime-dependent prior for phi_lstm:
+  
+          - We center both phi_low and phi_high at 0.0, reflecting the default belief that the LSTM should
+            not systematically inflate/reduce volatility without evidence.
+  
+          - For regime 1 (presumed low-vol), we use a tight prior SD=0.01 
+  
+          - For other regimes (e.g. high-vol), SD=0.03 allows slightly larger positive 
+     	    phi but still small.
+  		 
+       */
+       phi_lstm[u] ~ normal(u == 1 ? 0.005 : 0.01, u == 1 ? 0.01 : 0.03);
+       /* 
+       
+	   Beta (GARCH persistence):
+       Controls how much past volatility persists into the present.
+	  
+          - Low-vol regime: Beta(25, 2) → mean ≈ 0.93, very persistent.
+		
+          - High-vol regime: Beta(5, 5) → mean ≈ 0.50, more reactive and less persistent.
+		
+       This separation helps the model distinguish stable vs. shock-sensitive states.	  
+       */
+       beta[u] ~ beta(u == 1 ? 25 : 5, u == 1 ? 2 : 5);  // Mean ≈ 0.93 (low), 0.5 (high)
+       /*   
+	   
+         	   ---- GARCH-X exogenous coefficients (phix_1, phix_2) ---- 
+     	These capture the effect of external var_tiables (e.g., extrapolated volatility and volume)
+        on the var_tiance equation. Centered at 0 with moderate scale, allowing for both positive 
+		and negative influence.
+		
+		   - Low-vol regime: omega = 0.2, small sensitivity to external factors.
+           - High-vol regime: omega = 0.5, allows stronger influence of external signals.
+	  
+        */
+        phix_1[u] ~ normal(0, u == 1 ? 0.1 : 0.3);
+        phix_2[u] ~ normal(0, u == 1 ? 0.1 : 0.3);
+        /*
+	  
+                ---- Sigma0 (initial var_tiance per regime) ----
+         
+		     Sets the starting volatility for each hidden state.
+		 
+           - Low-vol regime: Prior ~ Normal(0.015, 0.005).
+		 
+           - High-vol regime: Prior ~ Normal(0.05, 0.01).
+		 
+         These priors prevent the model from starting with extreme or implausible volatility levels.
+         Truncated at 0 to maintain positivity.
+	     
+		 */
+         sigma0[u] ~ normal(u == 1 ? 0.015 : 0.05, u == 1 ? 0.005 : 0.01) T[0,]; 	 
+  }
+  /*
+       ---- latent-gamma prior for Student-t scale-mixture  ---- 
+  */
+  for (u in 1:N) {
+     w[u] ~ gamma(3.82426/2, 3.82426/2); // latent precision weight for Student-t ( Accordingly with Figure1.1e)
+  }
+  /*  
+       ---- oscillator priors ----  
+     RW prior for oscillator frequencies
+  */
+  osc_omega[1] ~ normal(osc_omega1, osc_sigma_nu);
+  for (t1 in 2:N){
+    osc_omega[t1] ~ normal(osc_omega[t1-1], osc_sigma_nu);
+  }
+  /*  
+       ---- priors for oscillator params ---- 
+  */
+  osc_r ~ beta(2, 2);
+  osc_sigma_eta ~ normal(0, 1) T[0,];
+  osc_sigma_eps ~ normal(0, 1) T[0,];
+  osc_sigma_nu ~ normal(0, 0.5) T[0,];
+  osc_omega1 ~ normal(0, 1);
+  /*  
+       ---- likelihood contributions from the filter ---- 
+  */
+  for (tt in 1:N) {
+    target += normal_lpdf(residuals[tt] | dot_product(H, m), sqrt(S));
+  }
+}
+
+generated quantities{
+   /* ---- Jump component 
+                   for "mu_mean_new" ----  */
+   vector[N + T_forecast] jumps_new;  
+   /* 
+      ---- Spike-and-slab mix indicator for future jump
+           1 = slab (huge jump), 0 = spike (zero jump) ----  */
+   int is_slab;
+   /* 
+      Simulating returns (Posterior predictive checks)
+   */
+   vector [N+T_forecast] y_sim;
+   /*
+      Predicted periodic terms for volume conditional mean
+   */
+   real fourier_terms_4; 
+   real fourier_terms_5;
+   vector [N+T_forecast] periodic_component_sum_new;
+   /*
+     Forward probabilities for forecast horizon
+   */
+   vector[2] prob_forecast[N+T_forecast];
+   /*
+                ---- Log-likelihood for WAIC/LOO ---- 
+     These will be saved for model comparison and diagnostics.
+	 
+   */
+   vector[N] log_lik;           // Kalman-marginalized log-likelihood contributions (main one for WAIC/LOO)
+   vector[N] log_lik_mixture;   // Original Student-t mixture log-likelihood (diagnostic only, not used in WAIC/LOO)
+   real total_log_lik;          // Sum of log_lik across all observations (optional convenience)
+   real total_log_lik_mixture;  // Sum of log_lik_mixture (for diagnostic comparison)
+   /*
+                ---- Kalman filter helper variables ----
+     These are used inside the in-sample pass of the Kalman filter
+     to compute predictive means and variances at each time step.
+	 
+   */
+   vector[2] H_gq;              // Observation matrix (projects 2D oscillator state down to scalar)
+   vector[2] m_gq;              // Filtered mean of oscillator state (2D latent state)
+   matrix[2,2] Pmat_gq;         // Filtered covariance of oscillator state (uncertainty in latent state)
+   real regime_var_gq;          // Regime-mixed variance from MS-GARCH step at time t
+   real obs_var_gq;             // Observation variance after dividing regime_var by latent precision w[t]
+   real yhat_gq;                // Predicted mean of residuals at time t from Kalman filter
+   real SS_gq;                  // Total predictive variance (oscillator + regime + mixture noise)
+   real mixture_sigma_gq;       // Scale parameter for Student-t mixture (diagnostic likelihood only)
+   /*
+                 ---- Kalman update step variables ----
+   */
+   vector[2] Kgain_gq;          // Kalman gain at time t (2x1 vector, determines update weight)
+   vector[2] xdraw_gq;          // Random draw from the latent oscillator state posterior at time t
+   real osc_part_gq;            // Random contribution of oscillator to observed series at time t
+   //     
+   /*
+               ---- predictive mean state vector for oscillator at forecast start. ----
+			   
+			   This carries forward the filtered latent oscillator state (2D phase space)
+               from the in-sample Kalman filter. Dimension = 2 because oscillator
+               is represented in cosine/sine coordinates.
+
+   */
+   vector[2] m_f;     
+   /*
+               ---- predictive covariance matrix of the oscillator state at forecast start. ----
+			   
+               This is the uncertainty carried forward about (cos,sin) state evolution,
+               propagated during forecasting with process noise.
+   */
+   matrix[2,2] P_f;        
+   /*
+               ---- predictive oscillator frequency at forecast start. ----
+			   
+               Initialized from last estimated in-sample frequency osc_omega[N],
+               then evolved forward by a random walk with step size osc_sigma_nu.
+   */
+   real omega_f; 
+   //
+   /* 
+         
+		  ---- Build rotation matrix for oscillator dynamics ----
+   
+       The oscillator latent state is represented as a 2D vector [x1, x2].
+       At each step, the state evolves by a rotation in the plane
+       with angle `omega_f` (the instantaneous frequency).
+
+       Mathematically:
+       
+	        [x1(t+1)]   [ cos(omega_f)  -sin(omega_f) ] [x1(t)]
+            [x2(t+1)] = [ sin(omega_f)   cos(omega_f) ] [x2(t)]
+
+       This is just a 2×2 rotation matrix that rotates the state forward.
+     
+   */
+   real c_gq;                // cosine of current frequency
+   real s_gq;                // sine of current frequency
+   matrix[2,2] Rmat_gq;      // 2×2 rotation matrix
+   /*   
+         ---- Draw forecast oscillator latent state ----
+   
+      We propagate uncertainty from the predictive mean state (m_f)
+      and covariance (P_f) by sampling a latent 2D state vector.
+   
+          - "x_f[1]" ~ cosine component of oscillator
+          - "x_f[2]" ~ sine component of oscillator
+
+      This ensures the forecast accounts for both:
+   
+      * The deterministic rotation dynamics
+      * The stochastic process noise in the oscillator.
+	  
+   */
+   vector[2] x_f;
+   /*   
+   
+        ---- Extract observable oscillator contribution ----
+   
+      The observable contribution of the oscillator to y comes from
+      projecting the latent state x_f onto H = [1, 0].
+   
+        - This means we only take the first coordinate (cosine cycle).
+        - Equivalent to: osc_part_forecast = x_f[1]
+
+     If you want to include measurement noise in forecasts,
+     you can replace it with:
+      
+	    osc_part_forecast = normal_rng(dot_product(H, x_f), osc_sigma_eps);
+     
+		which adds observation-level jitter on top of the latent cycle.
+   
+   */
+   real osc_part_forecast;
+   /*
+            ---- Predicted  (Simulated)   conditional standard deviations for each state ---- 
+   */
+   vector <lower=0> [N+T_forecast] sigma_new;
+   /*
+     ---- GJR-GARCHX Model Parameters  ----
+   */ 
+   real <lower=0>  omega_regime_new;
+   real <lower=0>  alpha_regime_new;
+   real <lower=0>  psi_regime_new;
+   real <lower=0,upper=1>  beta_regime_new;
+   real <lower=-1, upper=1>  phix_1_regime_new;
+   real <lower=-1, upper=1>  phix_2_regime_new;
+   real <lower=-1, upper=1>  phi_lstm_regime_new;
+   /*
+      ---- Predicted  (Simulated)   mean ---- 
+   */
+   vector  [N+T_forecast] mu_mean_new;
+   /*
+      ---- Predicted  (Simulated)  residuals ----
+   */	  
+   vector [N+T_forecast] residuals_new;
+   vector [N+T_forecast] residuals_sq_new;
+   vector [N+T_forecast] var_t_new;
+   /*  
+      ---- Predicted momentum vectors for GRU ----
+   */
+   vector [N+T_forecast] v_g_f_gru_forward_new;
+   vector [N+T_forecast] v_h_gru_forward_new;  
+   vector [N+T_forecast] g_f_gru_forward_new;
+   vector [N+T_forecast] h_gru_forward_new;
+   vector [N+T_forecast] h_gru_forward_new_updated;
+   vector [N+T_forecast] h_gru_concatenate_new;
+   /* 
+      Forecasted LSTM cell,  hidden states  and activation layer
+   */
+   vector [N+T_forecast] h_new;
+   vector [N+T_forecast] C_new;
+   vector [N+T_forecast] eta_new;  
+   /* 
+      Predicted LSTM gate outputs and states
+   */   	  
+   vector <lower=-1.0, upper=1.0>  [N+T_forecast] n_d_new;
+   vector <lower= 0.0, upper=1.0>  [N+T_forecast] g_i_new;
+   vector <lower= 0.0, upper=1.0>  [N+T_forecast] g_o_new;
+   vector <lower= 0.0, upper=1.0>  [N+T_forecast] g_f_new;
+   /*
+      Predicted momentum vectors for LSTM 
+   */
+   vector [N+T_forecast] v_g_o_new;
+   vector [N+T_forecast] v_n_d_new;
+   vector [N+T_forecast] v_g_i_new;
+   vector [N+T_forecast] v_g_f_new;
+   /*       
+             	---- Copy Observed Data to New Vectors for Forecasting ----
+         Initializes the forecast vectors with the observed data to continue the sequence.
+   */	
+   v_g_f_gru_forward_new[1:N] = v_g_f_gru_forward;
+   v_h_gru_forward_new[1:N] = v_h_gru_forward;
+   g_f_gru_forward_new[1:N] = g_f_gru_forward;
+   h_gru_forward_new[1:N] =  h_gru_forward;
+   h_gru_forward_new_updated[1:N] =  h_gru_forward_updated;
+   h_gru_concatenate_new[1:N] = h_gru_concatenate;   
+   residuals_new[1:N] = residuals;
+   periodic_component_sum_new[1:N] = periodic_component_sum;
+   mu_mean_new[1:N] = mu_mean;
+   jumps_new[1:N] = jumps;
+   prob_forecast[1:N] = probability; 
+   residuals_sq_new[1:N] = residuals_sq;
+   v_g_o_new[1:N] = v_g_o;
+   v_n_d_new[1:N] = v_n_d;
+   v_g_i_new[1:N] = v_g_i;
+   v_g_f_new[1:N] = v_g_f;
+   g_o_new[1:N] = g_o;
+   n_d_new[1:N] = n_d;
+   g_i_new[1:N] = g_i;
+   g_f_new[1:N] = g_f;
+   C_new[1:N] = C;
+   h_new[1:N] = h;
+   eta_new[1:N] = eta;
+   var_t_new[1:N] = var_t;
+   //
+   /*   
+   ==================================
+     Kalman Filter  Initialization
+   ==================================
+   */   
+   H_gq[1] = 1;
+   H_gq[2] = 0;
+   m_gq = rep_vector(0.0, 2);                 // Start with diffuse zero mean
+   Pmat_gq = diag_matrix(rep_vector(5.0, 2)); // Large initial uncertainty
+   total_log_lik = 0;
+   total_log_lik_mixture = 0;
+   /*    
+    =======================
+     In-sample Kalman pass
+    =======================  
+   */
+   for (t in 1:N) {
+      /*  ---- regime-mixed variance from MS-GARCH ---- */
+      regime_var_gq = probability[t,1] * square(sigma[t,1])
+                    + probability[t,2] * square(sigma[t,2]);
+      /*
+         ---- adjust by Student-t latent weight ----
+	  */
+      obs_var_gq = regime_var_gq / w[t];
+	  /*
+         ---- predictive mean from current state ----
+	  */
+      yhat_gq = dot_product(H_gq, m_gq);
+	  /*
+         ---- predictive variance (state + obs noise) ----
+	  */
+      SS_gq = dot_product(H_gq, Pmat_gq * H_gq) + obs_var_gq;
+	  /*  
+        ---- Calculate `log_lik` for model comparison and `y_hat`  
+             for in-sample y_sim posterior predictive checks. ---- 
+      */
+	  //
+	  /*
+         ---- Kalman-marginalized log-likelihood contribution ----
+	  */
+      log_lik[t] = normal_lpdf(residuals[t] | yhat_gq, sqrt(SS_gq));
+	  /*
+         ---- diagnostic: original Student-t mixture log-likelihood ----
+	  */
+      mixture_sigma_gq = sqrt(regime_var_gq / w[t]);
+      log_lik_mixture[t] = student_t_lpdf(residuals[t] | 3.82426, 0, mixture_sigma_gq);  //  Accordingly with Figure1.1e
+	  /*
+          Accumulate totals
+	  */
+      total_log_lik += log_lik[t];
+      total_log_lik_mixture += log_lik_mixture[t];
+	  /*
+                        ---- Kalman update ----
+	  */
+      Kgain_gq = (Pmat_gq * H_gq) / SS_gq;
+      m_gq = m_gq + Kgain_gq * (residuals[t] - yhat_gq);
+      Pmat_gq = (diag_matrix(rep_vector(1.0,2)) - Kgain_gq * H_gq') * Pmat_gq;
+	  /*
+            ---- Draw oscillator contribution for posterior predictive ----
+	  */
+      xdraw_gq = multi_normal_rng(m_gq, Pmat_gq);     // Draw latent oscillator state
+      osc_part_gq = normal_rng(dot_product(H_gq, xdraw_gq), osc_sigma_eps);    // Contribution with observation jitter
+	  /* ---- Populate the historical part of sigma_new ----*/
+      if (probability[t, 1] >= probability[t, 2]) {
+          sigma_new[t] = sigma[t, 1];
+         } else {
+             sigma_new[t] = sigma[t, 2];
+      }
+	  /* 
+	        ---- Simulated return ----
+	  */
+      y_sim[t] = student_t_rng(3.82426, mu_mean[t] + osc_part_gq, sigma_new[t]); //  Accordingly with Figure1.1e
+	  //
+	  // Propagate oscillator forward
+      if (t < N) {
+        c_gq = cos(osc_omega[t]);
+        s_gq = sin(osc_omega[t]);
+        Rmat_gq[1,1] = c_gq;  Rmat_gq[1,2] = -s_gq;
+        Rmat_gq[2,1] = s_gq;  Rmat_gq[2,2] =  c_gq;
+        m_gq = osc_r * (Rmat_gq * m_gq);
+        Pmat_gq = osc_r * (Rmat_gq * Pmat_gq * (osc_r * Rmat_gq'))
+            + square(osc_sigma_eta) * diag_matrix(rep_vector(1.0,2));
+        }
+   }
+   //  Start regime forecast from t = N+1
+   fourier_terms_4 = 0.0;
+      if (k1 > 0) {
+        for (j in 1:k1) { 
+		  fourier_terms_4 +=  alfa1[j] * sin((2*pi()*f1[j]) *(N+1)) + beta1[j] * cos((2*pi()*f1[j]) * (N+1));
+         }
+   }
+   periodic_component_sum_new[N+1] = fourier_terms_4;
+   /*      
+                       One-step-ahead forecast of state probabilities:
+                                     p(s_{N+1} | y_{1:N})
+						  
+        HMM one-step-ahead regime forecast: p(s_{N+1}|y_{1:N}) = A' * p(s_N|y_{1:N})
+        Normalize to ensure probabilities sum to 1 and avoid numerical drift.
+   */
+   prob_forecast[N+1] = to_vector(A' * to_matrix(probability[N]));
+   prob_forecast[N+1] /= sum(prob_forecast[N+1]); // normalizes
+   //
+   omega_regime_new =  dot_product(omega_sorted,   prob_forecast[N+1]);
+   alpha_regime_new =  dot_product(alpha_sorted,   prob_forecast[N+1]);
+   psi_regime_new  =   dot_product(psi_sorted,   prob_forecast[N+1]);
+   beta_regime_new = dot_product(beta_sorted,   prob_forecast[N+1]);
+   phix_1_regime_new = dot_product(phix_1_sorted,   prob_forecast[N+1]);
+   phix_2_regime_new = dot_product(phix_2_sorted,   prob_forecast[N+1]);
+   phi_lstm_regime_new = dot_product(phi_lstm_sorted,   prob_forecast[N+1]);   
+   //   
+   /*
+             GJR_GARCH_X terms
+   */
+   residuals_sq_new[N+1] = square(residuals[N]);
+   //
+   v_g_o_new[N+1] = (momentum * v_g_o_new[N] + epsilon*thetv_o*h[N]);
+   v_n_d_new[N+1] = (momentum * v_n_d_new[N] + epsilon*thnv_d*h[N]);
+   v_g_i_new[N+1] = (momentum * v_g_i_new[N] + epsilon*thnv_i*h[N]);
+   v_g_f_new[N+1] = (momentum * v_g_f_new[N] + epsilon*thnv_f*h[N]);
+   g_o_new[N+1]  = inv_logit(v_g_o_new[N+1] + thnw_o*residuals_sq[N] + thnb_o);
+   n_d_new[N+1]  = tanh(v_n_d_new[N+1] + thnw_d*residuals_sq[N] +  thnb_d);
+   g_i_new[N+1]  = inv_logit(v_g_i_new[N+1] + thnw_i*residuals_sq[N] + thnb_i);
+   g_f_new[N+1]  = inv_logit(v_g_f_new[N+1] + thnw_f*residuals_sq[N] + thnb_f);
+   C_new[N+1] = g_i_new[N+1]*n_d_new[N+1]  + g_f_new[N+1]*C_new[N];
+   h_new[N+1] = g_o_new[N+1]*tanh(C_new[N+1]);
+   eta_new[N+1] = W_out*h_new[N+1] + B_out;
+   //
+   var_t_new[N+1] = omega_regime_new
+            + alpha_regime_new * residuals_sq_new[N+1]
+            + beta_regime_new * square(sigma_new[N]);			
+   if (use_x1 == 1){
+	        var_t_new[N+1] += phix_1_regime_new * x_1[N];
+   }
+   if (use_x2 == 1){
+            var_t_new[N+1] += phix_2_regime_new * x_2[N];
+   }
+   if (residuals[N] < 0){
+            var_t_new[N+1] += psi_regime_new*residuals_sq_new[N+1];
+   }
+   // Long-Memory LSTM filter 
+   var_t_new[N+1] += phi_lstm_regime_new*eta_new[N+1];	
+   // Days-of-the-week dummies
+   for (j in 1:2) { // Current state
+     var_t_new[N+1] += monday_centered[j]* date[N+1,1] + tuesday_centered[j]*date[N+1,2] + wednesday_centered[j]*date[N+1,3]
+                       + thursday_centered[j]*date[N+1,4] + friday_centered[j]*date[N+1,5];
+   }
+   //
+   var_t_new[N+1]  = ReLU(var_t_new[N+1]);
+   sigma_new[N+1]  = sqrt(var_t_new[N+1]);
+   /* 
+   ====================================================================
+       ---- Oscillator contribution at t = N+1 (forecast step) ----
+   ====================================================================
+   */
+   /*
+   ====================================================================
+                 FORECASTING WITH KALMAN OSCILLATOR
+   ====================================================================
+
+      Purpose:
+      --------
+	  
+         Extend the in-sample Kalman oscillator state into the future
+         (t = N+1 … N+T_forecast), so forecasts include cyclical dynamics.
+
+      How it works:
+      -------------
+   
+         1. Seed the forecast:
+            * Use last in-sample Kalman state (m, Pmat) as the starting point.
+            * Initialize frequency with last observed omega_N.
+
+         2. Evolve frequency:
+            * omega_f follows a random walk:
+              
+			  "omega[t+1] = omega[t] + osc_sigma_nu * Normal(0,1)";
+			  
+            * This allows frequency to drift stochastically across time.
+
+         3. Propagate oscillator state:
+            * Build rotation matrix R(omega_f) = [[cos omega, -sin omega], [sin omega, cos omega]].
+            * Rotate the latent state forward and apply damping osc_r.
+            * Add process noise osc_sigma_eta to spread uncertainty.
+
+         4. Sample latent oscillator state:
+            * x_f ~ MultiNormal(m_f, P_f).
+            * x_f[1] = latent cosine cycle.
+            * x_f[2] = latent sine cycle.
+
+         5. Observable oscillator contribution:
+            * Extract contribution with osc_part_forecast = H * x_f.
+                
+				Option A: latent cycle only (deterministic cycle).
+                Option B: latent cycle + measurement noise:
+				
+            "osc_part_forecast = normal_rng(H * x_f, osc_sigma_eps)";
+
+         6. Add oscillator to forecast mean:
+            * mu_mean_new[t] += osc_part_forecast
+            * Forecasts now carry cyclical dynamics + mensurament noise.
+
+         Interpretation:
+         ---------------
+   
+           * This produces forecasts that oscillate in a smooth,
+             quasi-periodic fashion (cycle from oscillator),
+             while still allowing for stochastic variation (random walk omega,
+             process noise, measurement noise).
+			 
+          * Effectively: AR/MA/GRU/GARCH/jumps capture fast shocks,
+            the oscillator adds "medium-term cycles",
+            and both combine in y_sim[t].
+   */
+   //
+   /*  
+        Start predictive state from last in-sample Kalman filter 
+		 (Seed forecast state from last filtered state)
+   */
+   m_f = m;        // seed predictive mean state from t = N
+   P_f = Pmat;     // seed predictive covariance from t = N
+   // Initialize frequency forecast with last known omega
+   omega_f = osc_omega[N]; 
+   {   
+     //         Perform one-step-ahead forecast (N+1)
+     /*   
+	      ---- Random walk step for oscillator frequency ----
+          
+		        Evolve omega by one innovation step
+		     (random walk with step-size osc_sigma_nu)
+	 */
+     omega_f = omega_f + osc_sigma_nu * normal_rng(0, 1);
+     /*
+     	 ---- Build rotation matrix for oscillator dynamics ---- 
+	       This rotates the state forward by angle omega_f
+     */
+     c_gq = cos(omega_f);      // cosine component
+     s_gq = sin(omega_f);      // sine component
+     // Fill rotation matrix entries
+     Rmat_gq[1,1] = c_gq;  
+     Rmat_gq[1,2] = -s_gq;
+     Rmat_gq[2,1] = s_gq;  
+     Rmat_gq[2,2] =  c_gq;
+     /* 
+	      ---- Propagate oscillator state mean and covariance ----
+        Apply damping (osc_r) and add process noise (osc_sigma_eta)  
+		
+     */
+     m_f = osc_r * (Rmat_gq * m_f);
+     P_f = osc_r * (Rmat_gq * P_f * (osc_r * Rmat_gq'))
+       + square(osc_sigma_eta) * diag_matrix(rep_vector(1.0,2));
+     /*   
+	        ---- Draw forecast oscillator latent state ----
+        Sample from predictive distribution of oscillator state   
+	 */
+     x_f = multi_normal_rng(m_f, P_f);
+     /*   
+        	        ---- Extract observable oscillator contribution ----
+          First coordinate is the latent cycle contribution (cosine component) with measurement noise
+	 */
+     osc_part_forecast = normal_rng(dot_product(H, x_f), osc_sigma_eps);
+   }
+   //
+   /*
+                             ---- Sampling new residuals  ----
+            Samples new residuals based on the sorted conditional standard deviation
+		    from the HMM states.
+         
+   */	  
+   residuals_new[N+1] = student_t_rng(3.82426, 0.0 , sigma_new[N+1]);
+   /*   
+	                      ---- GRU momentum update for t= N+1 ---- 
+   */
+   v_g_f_gru_forward_new[N+1] = (momentum * v_g_f_gru_forward[N] + epsilon*thnw_f_gru_scalar_forward*h_gru_forward[N]);
+   g_f_gru_forward_new[N+1] =   inv_logit(v_g_f_gru_forward_new[N+1] + thnv_f_gru_scalar_forward*y[N] + thnb_f_gru_scalar_forward);
+   v_h_gru_forward_new[N+1] =   (momentum *v_h_gru_forward[N] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward_new[N+1] + h_gru_forward[N]));
+   h_gru_forward_new[N+1] =     tanh(v_h_gru_forward_new[N+1] + theta_h_gru_scalar_forward*y[N] + thnb_h_gru_scalar_forward);
+   h_gru_forward_new_updated[N+1] = (1- g_f_gru_forward_new[N+1])*h_gru_forward[N] +  g_f_gru_forward_new[N+1] *h_gru_forward_new[N+1]; 
+   /*  
+	         *** For the backward GRU in forecasting:
+                 Freezing the last backward hidden state.
+                 This is the most common approach for practical forecasting with B-RNNs.
+                 Use the last computed backward state from observed data
+		 
+    */
+    h_gru_concatenate_new[N+1] = gru_hidden_state_scalar*((h_gru_backward_updated[N] + h_gru_forward_new_updated[N+1])/2);
+    /*			
+	            ---- Conditional mean iterations for forecasting at t= N+1 ----
+	                            *** Simulating new jumps ***
+    */
+    is_slab = 0;
+    is_slab = bernoulli_rng(pi_z); // 1 = slab (Huge jump), 0 = spike (almost zero)
+    if (is_slab == 1){
+          jumps_new[N+1] = normal_rng(0, sigma_slab);
+      }else{
+          jumps_new[N+1] = normal_rng(0, sigma_spike);
+    }
+    /*   
+	            ---- Conditional mean iterations for forecasting ----
+		                              FARMAX
+    */
+    mu_mean_new[N+1] = mu;
+    mu_mean_new[N+1]  += periodic_component_sum_new[N+1]; 
+    if (k > 0)  for (i in 1:k) {
+        for (mm in 1: k) {
+          mu_mean_new[N+1]  += g_1[i, mm + 1] * y[N];
+         }
+    }
+    if(p > 0) for (i in 1:p){ // If AR component is specified
+		  mu_mean_new[N+1]  += phi_mean[i]*(h_gru_concatenate_new[(N+1)-i]); // AR terms on past observed terms.
+	}
+    if(q > 0) for(j in 1:q){ // If MA component is specified
+          mu_mean_new[N+1]  += theta_mean[j] * residuals_new[(N+1)-j]; // MA terms on past residuals.
+    }
+    mu_mean_new[N+1]  += kpi*signals[N];
+    mu_mean_new[N+1]  += jumps_new[N+1]; 
+	mu_mean_new[N+1]  += price_action_3 * x_3[N]; 
+    mu_mean_new[N+1]  += price_action_4 * x_4[N]; 
+    mu_mean_new[N+1]  += price_action_5 * x_5[N]; 
+    mu_mean_new[N+1]  += price_action_6 * x_6[N]; 
+    mu_mean_new[N+1]  = swish( mu_mean_new[N+1] , beta_swish);	
+    /*
+               ---- Add oscillator contribution to the mean ----
+    */
+    mu_mean_new[N+1] = mu_mean_new[N+1] + osc_part_forecast;
+    //
+    /*    
+	           ---- Simulating new log-returns (Posterior) at t= N+1 ---- 
+    */	  
+    y_sim[N+1] = student_t_rng(3.82426,mu_mean_new[N+1], sigma_new[N+1]);
+    // Regime forecast from t = N+2 and so on ...
+    for(t in (N+2):(N+T_forecast)) {
+        prob_forecast[t] = to_vector(A' * to_matrix(prob_forecast[t-1]));
+        prob_forecast[t] /= sum(prob_forecast[t]);
+		//
+        omega_regime_new =  dot_product(omega_sorted,   prob_forecast[t]);
+        alpha_regime_new =  dot_product(alpha_sorted,   prob_forecast[t]);
+        psi_regime_new  =   dot_product(psi_sorted,   prob_forecast[t]);
+        beta_regime_new = dot_product(beta_sorted,   prob_forecast[t]);
+        phix_1_regime_new = dot_product(phix_1_sorted,   prob_forecast[t]);
+        phix_2_regime_new = dot_product(phix_2_sorted,   prob_forecast[t]);
+		phi_lstm_regime_new= dot_product(phi_lstm_sorted,   prob_forecast[t]);
+        /*
+           GJR_GARCH-X terms
+        */
+        residuals_sq_new[t] = square(residuals_new[t-1]);
+		//
+        v_g_o_new[t] = (momentum * v_g_o_new[t-1] + epsilon*thetv_o*h_new[t-1]);
+        v_n_d_new[t] = (momentum * v_n_d_new[t-1] + epsilon*thnv_d*h_new[t-1]);
+        v_g_i_new[t] = (momentum * v_g_i_new[t-1] + epsilon*thnv_i*h_new[t-1]);
+        v_g_f_new[t] = (momentum * v_g_f_new[t-1] + epsilon*thnv_f*h_new[t-1]);
+        g_o_new[t]  = inv_logit(v_g_o_new[t-1] + thnw_o*residuals_sq_new[t-1] + thnb_o);
+        n_d_new[t]  = tanh(v_n_d_new[t-1] + thnw_d*residuals_sq_new[t-1] +  thnb_d);
+        g_i_new[t]  = inv_logit(v_g_i_new[t-1] + thnw_i*residuals_sq_new[t-1] + thnb_i);
+        g_f_new[t]  = inv_logit(v_g_f_new[t-1] + thnw_f*residuals_sq_new[t-1] + thnb_f);
+        C_new[t] = g_i_new[t]*n_d_new[t]  + g_f_new[t]*C_new[t-1];
+        h_new[t] = g_o_new[t]*tanh(C_new[t]);
+		eta_new[t] = W_out*h_new[t] + B_out;	
+		//
+        var_t_new[t] = omega_regime_new
+            + alpha_regime_new * residuals_sq_new[t]
+            + beta_regime_new * square(sigma_new[t-1]);
+	    if (use_x1 == 1){
+	        var_t_new[t] += phix_1_regime_new * x_1[t-1];
+	        }
+	    if (use_x2 == 1){
+            var_t_new[t] += phix_2_regime_new * x_2[t-1];
+	      }
+        if (residuals_new[t-1] < 0){
+          var_t_new[t] += psi_regime_new*residuals_sq_new[t];
+        }
+		// Long-Memory LSTM filter 
+		var_t_new[t] += phi_lstm_regime_new*eta_new[t];
+	    // Days-of-the-week dummies
+		for (j in 1:2) { // Current state
+	       var_t_new[t] += monday_centered[j]* date[t,1] + tuesday_centered[j]*date[t,2] + wednesday_centered[j]*date[t,3]
+	                       + thursday_centered[j]*date[t,4] + friday_centered[j]*date[t,5];
+		}
+        //
+        var_t_new[t] = ReLU(var_t_new[t]);		
+        sigma_new[t] = sqrt(var_t_new[t]);
+        //
+        /*
+           ---- Sampling new residuals  ----
+        */	  
+        residuals_new[t] = student_t_rng(3.82426, 0.0 , sigma_new[t]);
+        /*  
+           GRU terms
+        */
+	    v_g_f_gru_forward_new[t] = (momentum * v_g_f_gru_forward_new[t-1] + epsilon*thnw_f_gru_scalar_forward*h_gru_forward_new[t-1]);
+		g_f_gru_forward_new[t] = inv_logit(v_g_f_gru_forward_new[t] + thnv_f_gru_scalar_forward*y_sim[t-1] + thnb_f_gru_scalar_forward);
+		v_h_gru_forward_new[t] =  (momentum *v_h_gru_forward_new[t-1] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward_new[t] + h_gru_forward_new[t-1]));
+		h_gru_forward_new[t] =  tanh(v_h_gru_forward_new[t] + theta_h_gru_scalar_forward*y_sim[t-1] + thnb_h_gru_scalar_forward);
+		h_gru_forward_new_updated[t] = (1- g_f_gru_forward_new[t])*h_gru_forward_new[t-1] +  g_f_gru_forward_new[t] *h_gru_forward_new[t]; 
+		h_gru_concatenate_new[t] = (h_gru_backward_updated[N] + h_gru_forward_new_updated[t])/2;
+	    h_gru_concatenate_new[t] = gru_hidden_state_scalar*((h_gru_backward_updated[N] + h_gru_forward_new_updated[t])/2);			
+	    /*			
+	         Simulating new jumps 
+	    */
+	    is_slab = 0;
+        is_slab = bernoulli_rng(pi_z); 
+        if (is_slab == 1){
+            jumps_new[t] = normal_rng(0, sigma_slab);
+        }else{
+            jumps_new[t] = normal_rng(0, sigma_spike);
+        }
+	    fourier_terms_5 = 0.0;
+        if (k1 > 0) {
+          for (j in 1:k1) { 
+            fourier_terms_5 += alfa1[j] * sin((2*pi()*f1[j]) *(t)) + beta1[j] * cos((2*pi()*f1[j]) * (t));
+             }
+        }
+	    periodic_component_sum_new[t] = fourier_terms_5;		
+        /*			
+	      FARMAX 
+	    */
+        mu_mean_new[t] = mu;
+		mu_mean_new[t] += periodic_component_sum_new[t];
+        if (k > 0)  for (i in 1:k) {
+          for (mm in 1:k) {
+            mu_mean_new[t] += g_1[i, mm + 1] * y_sim[t - mm];
+          }
+        }
+        if(p > 0) for (i in 1:p){ // If AR component is specified
+		    mu_mean_new[t] += phi_mean[i]*(h_gru_concatenate_new[t-i]); // AR terms on past observed terms.
+	    }
+        if(q > 0) for(j in 1:q){ // If MA component is specified
+            mu_mean_new[t] += theta_mean[j] * residuals_new[t-j]; // MA terms on past residuals.
+        }
+	    mu_mean_new[t] += kpi*signals[t-1];
+	    mu_mean_new[t] += jumps_new[t]; 
+	    mu_mean_new[t] += price_action_3 * x_3[N];
+        mu_mean_new[t] += price_action_4 * x_4[N];
+        mu_mean_new[t] += price_action_5 * x_5[N];
+        mu_mean_new[t] += price_action_6 * x_6[N];
+	    mu_mean_new[t]  = swish( mu_mean_new[t], beta_swish);	
+        /*
+        ======================================================
+           ---- Oscillator forecast update (Kalman style) ----
+        ======================================================
+        */
+		//
+        /*   
+            ---- Random walk step for oscillator frequency ----
+     
+          The oscillator frequency evolves as a random walk:
+        
+		    *  omega_f(t) = omega_f(t-1) + omega_v * sigma,   sigma ~ N(0,1)
+
+         This allows the cycle frequency to drift slowly over time.
+		 
+        */
+        omega_f = omega_f + osc_sigma_nu * normal_rng(0, 1);
+        /*
+     
+	        ---- Build rotation matrix for oscillator dynamics ----
+     
+          Rotate the 2D oscillator state forward by angle omega_f.
+          This enforces sinusoidal dynamics in the latent oscillator state.
+     
+               [x1(t+1)]   [ cos(omega)  -sin(omega) ] [x1(t)]
+               [x2(t+1)] = [ sin(omega)   cos(omega) ] [x2(t)]
+        */
+        c_gq = cos(omega_f);
+        s_gq = sin(omega_f);
+        Rmat_gq[1,1] = c_gq;  Rmat_gq[1,2] = -s_gq;
+        Rmat_gq[2,1] = s_gq;  Rmat_gq[2,2] =  c_gq;
+        /*
+             
+			 ---- Propagate oscillator state mean and covariance ----
+     
+          Apply:
+            * Linear state transition (rotation + damping factor osc_r)
+            * Process noise injection (osc_sigma_eta)
+     
+          This updates both:
+            - m_f : predictive mean of oscillator state
+            - P_f : predictive covariance of oscillator state
+        */
+        m_f = osc_r * (Rmat_gq * m_f);
+        P_f = osc_r * (Rmat_gq * P_f * (osc_r * Rmat_gq'))
+        + square(osc_sigma_eta) * diag_matrix(rep_vector(1.0,2));
+        /*
+     
+	         ---- Draw forecast oscillator latent state ----
+     
+          Sample x_f ~ Normal(m_f, P_f)
+          This represents the uncertain oscillator latent state at step t.
+     
+              - x_f[1] = cosine component
+              - x_f[2] = sine component
+        */
+		x_f = multi_normal_rng(m_f, P_f);
+        /*
+     
+	        ---- Extract observable oscillator contribution ----
+     
+          The observed contribution is projection onto H = [1,0].
+          This picks out the cosine component of the latent state.
+
+            Option A (default): use latent cycle directly
+           		   osc_part_forecast = x_f[1]
+     
+	        Option B (with measurement noise):
+                   osc_part_forecast = normal_rng(x_f[1], osc_sigma_eps)
+        */
+        // "osc_part_forecast = dot_product(H, x_f);  // = x_f[1] Option A "
+		osc_part_forecast = dot_product(H, x_f);
+        /*
+     
+	        ---- Add oscillator contribution to conditional mean ----
+     
+          The latent oscillator’s effect is added to mu_mean_new[t],
+          alongside other components (Fourier terms, ARMA, GRU, jumps, etc.)
+  
+        */
+        mu_mean_new[t] = mu_mean_new[t] +  osc_part_forecast;
+	    /*  
+     	      ---- Simulating new log-returns (Posterior) ---- 
+        */		
+	    y_sim[t] = student_t_rng(3.82426,mu_mean_new[t], sigma_new[t]);
+    }	
+}
+
+
+"""
+Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X= pystan.StanModel(model_code = Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X)
+
+#   Data truction to fit log returns length
+
+KPI_lenght_to_trim =   len(Fundamental_analysis_KPI_PETR3_SA) - len(PETR3_SA_Close_fractional_difference_Linear_filtred)
+Time_length_to_trim =  len(PETR3_SA['Volume']) - len(PETR3_SA_Close_fractional_difference_Linear_filtred)
+
+
+#   Exogenous Regressors 
+
+Volume_estimated_mean_scaled = function_to_scale_data(Volume_estimated_mean.values.astype(np.float64),0.001,1.0)
+Returns_volatility_mean_scaled = function_to_scale_data(Returns_volatility_mean.values.astype(np.float64),0.001,1.0)
+ema_fast = function_to_scale_data(Price_Action_KPI_PETR3_SA.iloc[:,0].values.astype(np.float64),-1.0,1.0)
+ema_slow = function_to_scale_data(Price_Action_KPI_PETR3_SA.iloc[:,1].values.astype(np.float64),-1.0,1.0)
+support =  function_to_scale_data(Price_Action_KPI_PETR3_SA.iloc[:,2].values.astype(np.float64),-1.0,1.0)
+resistance = function_to_scale_data(Price_Action_KPI_PETR3_SA.iloc[:,3].values.astype(np.float64),-1.0,1.0)
+
+data  = ({'k1': 2, # Related to f1
+          'p' : 2, # Figure_1.1h
+		  'q' : 2, # Figure_1.1i
+		  'k' : 2, # number of peaks in Figure_1-1m (Spectogram analysis)
+          'N' : len(PETR3_SA_Close_fractional_difference_Linear_filtred_train),
+          'T_forecast' : forecasting_extrapolation_lengh,
+		  'f1' : [1/30.25, 1/34.57],
+		  'signals': Fundamental_analysis_KPI_PETR3_SA[KPI_lenght_to_trim:]["signal"].values.flatten().astype(np.int64),
+          'date': dates_dummies[Time_length_to_trim:].values.astype(np.int64),
+		  'y':   PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.flatten().astype(np.float64),
+		  'use_x1': 1,
+          'use_x2': 1,
+		  'x_1': Volume_estimated_mean_scaled,
+		  'x_2': Returns_volatility_mean_scaled,
+          'x_3': ema_fast,
+          'x_4': ema_slow,
+          'x_5': support,
+          'x_6': resistance
+	     })
+		 
+control = {}
+control['max_treedepth'] = 11
+control['adapt_delta'] = 0.9999
+
+fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X = Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X.sampling(data=data, iter=15000, chains=1, warmup=7000 ,thin=1, seed=101, n_jobs = 1, control=control)
+
+samples = fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X.extract()
+
+# Parameters of interest and their dimensions
+param_names = fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X.sim['pars_oi']
+param_dims = fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X.sim['dims_oi']
+param_dict = dict(zip(param_names, param_dims))
+
+# EXCLUDE: everything not declared in the `parameters {}` block
+
+EXCLUDE = {
+    # Transformed parameters
+    "phi_mean", "theta_mean", "mu_mean", "residuals", "g_1", "u_1", "fourier_terms_1", "fourier_terms_2","fourier_terms_3", "periodic_component_sum",
+	"sigma0_sorted", "omega_sorted", "alpha_sorted", "psi_sorted", "beta_sorted", "phix_1_sorted", "phix_2_sorted", "phi_lstm_sorted", "monday_centered", 
+    "tuesday_centered", "wednesday_centered" , "thursday_centered", "friday_centered", "week_effect_avg", "residuals_sq", "var_t", "sigma", "v_g_f_gru_forward", 
+	"v_h_gru_forward", "v_g_f_gru_backward", "v_h_gru_backward","g_f_gru_forward","h_gru_forward","h_gru_forward_updated", "g_f_gru_backward","h_gru_backward",
+	"h_gru_backward_updated", "h_gru_concatenate", "h","C", "n_d","g_i","g_o","g_f","v_g_o", "v_n_d","v_g_i","v_g_f", "eta", "H","m","Pmat","c","s","Rmat","yhat",
+	"regime_var", "obs_var","S", "Kgain","accumulator","log_alpha","probability", "A"
+  
+	# Generated quantities
+    "jumps_new", "int is_slab", "y_sim", "fourier_terms_4", "fourier_terms_5","periodic_component_sum_new", "prob_forecast", 
+    "log_lik", "log_lik_mixture", "total_log_lik", "total_log_lik_mixture", "H_gq", "m_gq", "Pmat_gq", "regime_var_gq", 
+    "obs_var_gq", "yhat_gq", "SS_gq", "mixture_sigma_gq", "Kgain_gq", "xdraw_gq", "osc_part_gq", "m_f", "P_f", "omega_f",
+   	"c_gq","s_gq", "Rmat_gq", "x_f", "osc_part_forecast", "sigma_new", "omega_regime_new", "alpha_regime_new", "psi_regime_new",
+    "beta_regime_new","phix_1_regime_new", "phix_2_regime_new", "phi_lstm_regime_new", "mu_mean_new", "residuals_new", "residuals_sq_new",
+	"var_t_new","h_new","C_new","eta_new","n_d_new", "g_i_new", "g_o_new", "g_f_new", "v_g_o_new", "v_n_d_new", "v_g_i_new", "v_g_f_new",
+	"v_g_f_gru_forward_new", "v_h_gru_forward_new", "g_f_gru_forward_new", "h_gru_forward_new", "h_gru_forward_new_updated",
+    "h_gru_concatenate_new"	
+}
+
+# Filter only those in the `parameters` block
+filtered_param_dict = {
+    name: dim for name, dim in param_dict.items()
+    if name not in EXCLUDE
+}
+
+# Count total number of scalar parameters
+total_filtered_params = sum(np.prod(dim) if dim else 1 for dim in filtered_param_dict.values())
+
+print("Total number of scalar parameters (parameters block only):", total_filtered_params)
+#  Total number of scalar parameters (parameters block only): 1094
+
+
+Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X = az.from_pystan(
+    posterior=fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X,
+    observed_data=["y"],
+    log_likelihood="log_lik_mixture"
+)
+
+
+# --- Calculate WAIC ---
+waic_result = az.waic(Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X)
+
+print("\n--- WAIC Results ---")
+print(waic_result)
+
+Computed from 8000 by 242 log-likelihood matrix
+
+#             Estimate       SE
+#   elpd_waic -29829.22  1839.40
+#   p_waic    29625.86        -
+
+
+###################################*/                      \*###################################
+#
+#    
+#
+#               Model 0: elpd_waic = 24.73, SE = 19.20
+#
+#               Model 1: elpd_waic = -29829.22, SE = 1839.40
+#               
+#               Difference = 29804.49,
+#               Sum of SEs = 19.20 + 1839.40 = 1858.60
+#               Since 29804.49 > 1858.60 -> There are significant differences betweem them
+#
+###################################*/                      \*###################################
+
+# Define the directory and filename
+save_directory = r'C:\Users\Rafael Xavier Botelho\Documents\Econometrics_CEA'
+filename = 'Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X.pkl'
+
+# Construct the full file path
+full_path = os.path.join(save_directory, filename)
+
+# Save the model
+with open(full_path, 'wb') as f:
+    pickle.dump(fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X, f)
+
+# Load the model
+with open(full_path, 'rb') as f:
+    Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X = pickle.load(f)
+
+#=============*/        \*=================	    
+
+samples = fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_X_LSTM_MS_GJR_GARCH_X.extract()
+
+#=============*/        \*=================	
+
+y_hat = samples["y_sim"]
+  
+pd.DataFrame(y_hat).to_csv(r'C:\Users\Rafael Xavier Botelho\Documents\Econometrics_CEA\log_returns_estimated.csv', index=None)
+log_returns_estimated = pd.read_csv("C:/Users/Rafael Xavier Botelho/Documents/Econometrics_CEA/log_returns_estimated.csv")
+
+# ---- Plotting ----
+#          (Log-returns train sample)
+
+log_returns_estimated_mean = log_returns_estimated.mean(axis=0)
+
+x_lower, x_upper = np.percentile(log_returns_estimated, [2.5, 97.5], axis=0)
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10), sharex=True)
+ax.plot(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.flatten() , label='Observed log returns train (y_obs_train)', color='grey', alpha=0.7)
+ax.plot(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], log_returns_estimated_mean[:-forecasting_extrapolation_lengh], label='Log-returns In Sample', color='blue', linewidth=2)
+ax.fill_between(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], x_lower[:-forecasting_extrapolation_lengh],x_upper[:-forecasting_extrapolation_lengh], color='blue', alpha=0.2, label='95% Credible Interval')
+ax.set_ylabel('Value')
+ax.set_title('Estimated Log-returns in Sample')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+fig.autofmt_xdate() 
+plt.tight_layout() 
+plt.show()
+
+
+# Figure_2.2a_In_Sample_Log_Returns.
+
+############################
+#   In Sample regression   #
+#        metrics KPI       #
+#                          #
+############################                                                                                                                                                            
+
+MSE = mean_squared_error(log_returns_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel(),PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel())
+ 
+RMSE = math.sqrt(MSE)
+print('RMSE: %f' % RMSE)
+
+#  RMSE: 0.155281
+
+#             -------------------*/          \*-------------------
+#
+#   RMSE (Root Mean Squared Error):
+#
+#   Given that the log returns scale is primarily between −1 and +1, 
+#   an RMSE of 0.155281 indicates a very good fit for the in-sample data.
+#
+#   The model's average prediction error is relatively small compared to 
+#   the typical range and magnitude of the returns. Visually, the blue estimated line 
+#   closely tracks the grey observed data. This suggests the model performs well in 
+#   capturing the dynamics of the log returns within the training period.
+#
+#             -------------------*/          \*------------------- 
+
+mae = mean_absolute_error(log_returns_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel(),PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel())
+print('MAE: %f' % mae)
+
+#  MAE: 0.137470
+
+
+#             -------------------*/          \*-------------------
+#
+#   MAE (Mean Absolute Error):
+#
+#   Since the log returns scale is between −1 and +1, an MAE of 0.137470 indicates a strong performance in fitting the data. 
+#   The average error is quite small relative to the typical magnitude of the returns.This relatively small difference 
+#   between MAE and RMSE suggests that there are not many extremely large prediction errors (outliers) in the in-sample estimation.
+#   If there were significant outliers, the RMSE would be much larger than the MAE.      
+#
+#             -------------------*/          \*------------------- 
+
+coefficient_of_dermination = r2_score(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel(),log_returns_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel())
+print('R2: %f' % coefficient_of_dermination)
+#  R2:  0.547261
+
+#             -------------------*/          \*------------------- 
+#
+#   R-squared (R²): Coefficient of Determination
+#   
+#   Value: An R2 of 0.547261 (or 54.73%) means that 54.73% of the variability in the PETR3_SA log returns within the training 
+#   sample is explained by the model 1.
+#
+#   Goodness of Fit: 
+#
+#   For time-series modeling of financial returns—which are notoriously difficult to predict and highly volatile (as shown by the wide 95% Credible Interval),
+#   an R2 value lie this is typically considered strong for an in-sample fit. It confirms that the model is capturing a significant portion of the systematic
+#   movements in the returns, not just random noise.
+#
+#   Context: 
+#   
+#   While R2 values are often high in non-financial applications, for market data, achieving this R2 suggests the model has effectively learned the historical 
+#   patterns and relationships within the training data.
+#
+#             -------------------*/          \*------------------- 
+
+Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test = ks_2samp(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel(),log_returns_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel())
+print('statistic: %f   ,pvalue: %f' % (Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test[0],Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test[1]))
+#   statistic: 0.363636   ,pvalue: 0.000000
+
+#             -------------------*/          \*------------------- 
+#
+#   Kolmogorov–Smirnov (KS) Two-Sample Test for Distribution Adherence
+#
+#   Statistic: 0.363636
+#   p-value:   0.000000
+#
+#   We must reject the null hypothesis (H0​) that the observed log returns and the estimated log returns 
+#   come from the same underlying distribution.
+#
+#   In the context of your model's performance:
+#
+#   The KS test strongly suggests that, although your model provides a good point-estimate fit 
+#   (as indicated by the low MAE and RMSE, and high R2), the distribution of its residuals (errors) 
+#   is systematically different from the distribution of the actual observed log returns. 
+#   Your model's predicted distribution is not a statistically accurate representation of the actual returns distribution. 
+#   This is a common finding in financial modeling, where even models with a good fit might fail distributional tests 
+#   due to the complex, non-Gaussian nature of financial data.
+#
+#             -------------------*/          \*-------------------
+
+# ---- QQplot between the two samples ----
+
+# Sort both arrays ( It's needed to align the percentiles in both distributions)
+sorted_obs = np.sort(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel().astype(np.float64))
+sorted_hat = np.sort(log_returns_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel().astype(np.float64))
+
+
+# Q-Q Plot between y_obs and y_hat
+plt.figure(figsize=(6, 6))
+plt.plot(sorted_obs, sorted_hat, 'o')
+plt.plot([sorted_obs.min(), sorted_obs.max()],
+         [sorted_obs.min(), sorted_obs.max()], 'r--')  # 45-degree line
+plt.title("Q-Q Plot: y_hat vs y_obs model 1")
+plt.xlabel("Observed Quantiles for Log Returns In-Sample model 1")
+plt.ylabel("Predicted Quantiles for Log Returns In-Sample model 1")
+plt.grid(True)
+plt.show()
+
+
+# Figure_2.2b_Q-Q_Plot_between_log_returns_In_Sample_and_estimated
+
+#             -------------------*/          \*-------------------
+#
+#   Q–Q Plot Interpretation: Predicted (v_hat) vs. Observed (v_obs) Volume Quantiles
+#
+#   Central Region (Around 0.0):
+#
+#       The data points in the center (from about −0.25 to 0.25 on the axes) lie very close to the red dashed line.
+#
+#       Conclusion: 
+#		
+#		This indicates that for the vast majority of typical (non-extreme) log returns, the model's predicted distribution 
+#		is a very good match for the observed distribution.
+#
+#   Tails (Extremes):
+#
+#       Lower Tail (Negative Returns): 
+#		
+#		As we move towards the extreme negative returns (below −0.5 on the x-axis), the points deviate significantly below the red line.
+#       The last two points are near x=−1.0 and x=−0.75, but the corresponding y values are lower (near −1.0 and −0.75 respectively, indicating they are further away from the mean).
+#
+#       Specific Insight: 
+#		
+#		The model underestimates the magnitude of extreme negative returns (i.e., it doesn't predict losses as severe as those actually observed, 
+#		or the extreme observed losses occur less frequently than the model's distribution predicts).
+#
+#       Upper Tail (Positive Returns): 
+#		
+#		As we go towards the extreme positive returns (above 0.5 on the x-axis), the points deviate significantly above the red line.
+#
+#       Specific Insight: 
+#       
+#       The model underestimates the magnitude of extreme positive returns (i.e., it doesn't predict gains as large as those actually observed, 
+#       or the extreme observed gains occur less frequently than the model's distribution predicts).
+#
+#   Relationship to the KS Test Result
+#
+#   This Q-Q plot visually confirms the result of the Kolmogorov-Smirnov (KS) test (p-value=0.000000).
+#
+#   Good Fit (Central Region): The small MAE and RMSE are driven by the excellent fit in the center.
+#
+#   Distributional Mismatch (Tails): The significant deviation in the tails is the reason the KS test rejected the null hypothesis. The model fails to accurately capture the full extent of the observed distribution's fat tails (extreme events), which is a common characteristic of financial return data.
+#
+#             -------------------*/          \*-------------------
+
+
+####################################
+#  Out of Sample                   #
+#        predictive KPI peformace  #
+#                                  #
+####################################
+
+# (Log-returns test sample) 
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10), sharex=True)
+ax.plot(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], PETR3_SA_Close_fractional_difference_Linear_filtred_test.values.flatten().astype(np.float64) , label='Observed log-returns  test (y_test)', color='grey', alpha=0.7)
+ax.plot(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], log_returns_estimated_mean[-forecasting_extrapolation_lengh:], label='Log-returns Out of Sample', color='blue', linewidth=2)
+ax.fill_between(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], x_lower[-forecasting_extrapolation_lengh:],x_upper[-forecasting_extrapolation_lengh:], color='blue', alpha=0.2, label='95% Credible Interval')
+ax.set_ylabel('Value')
+ax.set_title('Estimated Log-returns Out of Sample Sample')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+fig.autofmt_xdate() 
+plt.tight_layout() 
+plt.show()
+
+# Figure_2.2c_Out_of_Sample_Volume
+
+#  Due to the very small out-of-sample size (only 5 observations),
+#  MAE was selected as the primary regression KPI,
+#  since it directly measures individual forecast accuracy.
+
+mae = mean_absolute_error(log_returns_estimated_mean[-forecasting_extrapolation_lengh:].values.ravel(),PETR3_SA_Close_fractional_difference_Linear_filtred_test.values.ravel())
+print('MAE: %f' % mae)
+
+#  MAE: 0.395102
+
+#             -------------------*/          \*-------------------
+#
+#   The gray line (Observed log-returns test) shows significant movement,
+#   peaking above 0.5 and then settling near 0.3.The blue line (Log-returns Out of Sample) 
+#   is nearly flat, hovering very close to 0.
+#
+#   The large vertical distance between the actual (gray) and the forecast (blue) 
+#   line visually confirms the large MAE≈0.40. The model is failing to capture the 
+#   trend or directional change that occurred in the out-of-sample period, consistently
+#   underestimating the positive returns.
+#
+#   Credible Interval:
+#
+#       Although the point estimate (blue line) is far from the observed return (gray line),
+#       the observed return still remains well within the 95% Credible Interval (the shaded blue area).
+#       This means the model is accurately quantifying the high uncertainty/risk of the forecast, 
+#       even if its mean prediction is inaccurate.
+#
+#   Conclusion
+#
+#       While the model demonstrated a strong fit in-sample (R2>0.5), the out-of-sample performance,
+#       quantified by the MAE= 0.395102, reveals a poor predictive capability on unseen data. The model's forecast (blue line)
+#       is too conservative and fails to capture the actual positive returns that occurred (gray line).
+#
+#             -------------------*/          \*-------------------
+
+#########################################
+#   Checking for volume residuals       #
+#                    homocedasticity    #
+#########################################
+
+def calculate_residuals(observed_values, predicted_location, predicted_scale, epsilon=1e-8):
+    """
+     
+    References :
+
+        CRYER, Jonathan D.; CHAN, Kung-Sik. Time Series Analysis: With Applications in R. 2. ed. New York: Springer, 2008.
+
+        HILPISCH, Yves. Python for Finance: Mastering Data-Driven Finance. 2. ed. Sebastopol, CA: O’Reilly Media, 2019.
+
+        HYNDMAN, Rob J.; ATHANASOPOULOS, George. Forecasting: Principles and Practice. 3. ed. Melbourne: OTexts, 2021.
+        Disponível em: [https://otexts.com/fpp3/](https://otexts.com/fpp3/). Acesso em: 25 set. 2025.
+
+        TSAY, Ruey S. *Analysis of Financial Time Series . 3. ed. Hoboken, NJ: John Wiley & Sons, 2010.
+    
+    
+    #   Calculates standardized residuals: (Observed - Predicted Location) / Predicted Scale.
+
+    Args:
+        observed_values (array-like): The actual observed values
+        predicted_location (array-like or scalar): The model's conditional mean (location).
+        predicted_scale (array-like): The model's conditional standard deviation (scale/volatility).
+        epsilon (float): A small value used to check for near-zero division in the scale.
+
+    Returns:
+        numpy.ndarray: The standardized residuals.
+    """
+    observed_values = np.asarray(observed_values, dtype=np.float64).ravel()
+    predicted_location = np.asarray(predicted_location, dtype=np.float64).ravel()
+    predicted_scale = np.asarray(predicted_scale, dtype=np.float64).ravel()
+    ########*/          \*########
+    #
+    # 1. Shape/Length Checks
+    #
+    ########*/          \*########
+    if observed_values.shape != predicted_scale.shape:
+        raise ValueError("Lengths of observed_values and predicted_scale must match.")
+    ########################*/          \*########################
+    #
+    # Check if location is a scalar or matches the length of the data
+    #
+    ########################*/          \*########################
+    if predicted_location.size > 1 and observed_values.shape != predicted_location.shape:
+        raise ValueError("Lengths of observed_values and predicted_location must match if predicted_location is an array.")
+    ########################*/          \*########################
+    #
+    # 2. Safety Check for Zero Division
+    #
+    ########################*/          \*########################
+    if np.any(predicted_scale < epsilon):
+        raise ValueError(
+            "Predicted scale contains values too close to zero (below {}). Cannot calculate standardized residuals.".format(epsilon)
+        )
+    ########*/          \*########
+    #
+    # 3. Calculation
+    #
+    ########*/          \*########
+    return (observed_values - predicted_location) / predicted_scale
+	
+conditional_mean = samples["mu_mean_new"]
+  
+pd.DataFrame(conditional_mean).to_csv(r'C:\Users\Rafael Xavier Botelho\Documents\Econometrics_CEA\conditional_mean.csv', index=None)
+conditional_mean_estimated = pd.read_csv("C:/Users/Rafael Xavier Botelho/Documents/Econometrics_CEA/conditional_mean.csv")
+
+log_returns_location = conditional_mean_estimated.mean(axis=0)
+
+#=============*/        \*=================
+
+residuals_volatility = samples["sigma_new"]
+  
+pd.DataFrame(residuals_volatility).to_csv(r'C:\Users\Rafael Xavier Botelho\Documents\Econometrics_CEA\residuals_volatility.csv', index=None)
+residuals_volatility_estimated = pd.read_csv("C:/Users/Rafael Xavier Botelho/Documents/Econometrics_CEA/residuals_volatility.csv")
+
+log_returns_scale = residuals_volatility_estimated.mean(axis=0)
+
+#=============*/        \*=================
+
+
+residuals = samples["residuals_new"]
+  
+pd.DataFrame(residuals).to_csv(r'C:\Users\Rafael Xavier Botelho\Documents\Econometrics_CEA\residuals.csv', index=None)
+residuals_estimated = pd.read_csv("C:/Users/Rafael Xavier Botelho/Documents/Econometrics_CEA/residuals.csv")
+
+residuals_estimated_mean = residuals_estimated.mean(axis=0)
+
+#=============*/        \*=================
+
+model_1_residuals_log_returns = calculate_residuals(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.flatten().astype(np.float64),
+                   log_returns_location[:-forecasting_extrapolation_lengh], log_returns_scale[:-forecasting_extrapolation_lengh])
+                   
+log_returns_in_sample = log_returns_estimated_mean[:-forecasting_extrapolation_lengh]
+
+#=============*/        \*=================
+				   
+# Plot Residuals vs. Fitted Values 
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x=log_returns_in_sample, y=model_1_residuals_log_returns, alpha=0.7)
+plt.axhline(0, color='red', linestyle='--', linewidth=0.8)
+plt.title('Residuals vs. Fitted Values')
+plt.xlabel('Fitted Values')
+plt.ylabel('Residuals')
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+
+#             -------------------*/          \*-------------------
+#
+#    The residuals are not randomly scattered around y=0. The strong concentration 
+#    of points in the center suggests that for small predicted returns (most of your data), 
+#    the model is systematically underestimating the actual returns, resulting in 
+#    consistently positive residuals. This indicates that a non-linear relationship or an 
+#    omitted variable might be present.
+#
+#    The vertical spread is not uniform. For fitted values between ≈−0.2 and 0.2, the residuals 
+#    are highly condensed. For the more extreme fitted values (e.g., x≈−0.8 or x≈0.75), the 
+#    residuals are more spread out (though sparse). Crucially, the range of residuals is much 
+#    wider for small fitted values than for large fitted values.
+#    
+#    There is some  evidence of heteroscedasticity (non-constant variance), although it 
+#    is less severe than the systematic pattern. The model's errors are not equally predictable 
+#    across the range of predicted returns.
+#
+#             -------------------*/          \*-------------------
+
+# --- Breusch-Pagan Test ---
+# Arguments: residuals, X (exog, independent variables)
+# Returns: lagrange_multiplier, p_value_lm, fvalue, p_value_f
+lm, lm_pvalue, fvalue, f_pvalue = het_breuschpagan(model_1_residuals_log_returns, 
+PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.astype(np.float64))
+
+
+print(f"\n--- Breusch-Pagan Test ---")
+print(f"Lagrange Multiplier p-value: {lm_pvalue:.4f}")
+print(f"F-statistic p-value:         {f_pvalue:.4f}")
+if lm_pvalue < 0.05:
+    print("  -> Significant p-value suggests presence of heteroscedasticity (reject H0).")
+else:
+    print("  -> No significant evidence of heteroscedasticity (fail to reject H0).")
+
+#   No significant evidence of heteroscedasticity (fail to reject H0).
+
+#=============*/        \*=================	
+
+#  Bringing the estimated data back to y_obs actual values
+
+PETR3_SA_Close_fractional_difference_Linear_filtred = pd.read_csv("C:/Users/Rafael Xavier Botelho/Documents/Econometrics_CEA/PETR3_SA_Close_fractional_difference_Linear_filtred.csv")
+
+interval_min = np.min(PETR3_SA_Close_fractional_difference_Linear_filtred.values.flatten().astype(np.float64))
+interval_max = np.max(PETR3_SA_Close_fractional_difference_Linear_filtred.values.flatten().astype(np.float64))
+
+def function_to_scale_data(x , interval_min  , interval_max):
+    return (x-x.min())/(x.max()-x.min()) * (interval_max - interval_min) + interval_min
+
+	  
+log_returns_estimated_mean_original_scaled = function_to_scale_data(log_returns_estimated_mean.values.flatten().astype(np.float64),interval_min,interval_max)
+		
+#######/                               \#######
+#                                             #
+#  ---- Passage 3 ----                        #
+#      Risk KPI. Risk vs. Return Binomial     #
+#                                             #
+#######/                               \#######
+
+#=============*/        \*=================
+# Estimated In-sample log-returns 
+#=============*/        \*=================
+
+mean_model_01_train = np.mean(log_returns_estimated_mean_original_scaled[:-forecasting_extrapolation_lengh].flatten().astype(np.float64))
+std_model_01_train  = np.std(log_returns_estimated_mean_original_scaled[:-forecasting_extrapolation_lengh].flatten().astype(np.float64))
+
+print('return_model_01_training: %f , risk_model_01_training: %f' % (mean_model_01_train,std_model_01_train))
+#  return_model_01_training: -0.001004 , risk_model_01_training: 0.012905
+
+#=============*/        \*=================
+#        Var and C-Var calculations
+#=============*/        \*=================
+
+# Set the confidence level
+alpha = 0.95
+
+# Empirical VaR (percentile)
+VaR_emp_in_sample_estimated = np.percentile(log_returns_estimated_mean_original_scaled[:-forecasting_extrapolation_lengh], (1 - alpha) * 100)
+
+# Empirical CVaR (average of losses worse than VaR)
+CVaR_emp_in_sample_estimated = log_returns_estimated_mean_original_scaled[:-forecasting_extrapolation_lengh][log_returns_estimated_mean_original_scaled[:-forecasting_extrapolation_lengh] <= VaR_emp_in_sample_estimated].mean()
+
+print(f"Empirical - VaR({alpha*100:.0f}%): {VaR_emp_in_sample_estimated:.4f}")
+# Empirical - VaR(95%): -0.0144
+print(f"Empirical - CVaR({alpha*100:.0f}%): {CVaR_emp_in_sample_estimated:.4f}")
+# Empirical - CVaR(95%): -0.0311
+
+#=============*/        \*=================
+# Observed In-sample log-returns
+#=============*/        \*=================
+
+mean_train = np.mean(PETR3_SA_Close_fractional_difference_Linear_filtred[:-forecasting_extrapolation_lengh].values.flatten().astype(np.float64))
+std_train  = np.std(PETR3_SA_Close_fractional_difference_Linear_filtred[:-forecasting_extrapolation_lengh].values.flatten().astype(np.float64))
+
+print('return_training: %f , risk_training: %f' % (mean_train,std_train))
+# return_training: -0.000801 , risk_training: 0.013397
+
+#=============*/        \*=================
+#        Var and C-Var calculations
+#=============*/        \*=================
+
+# Empirical VaR (percentile)
+VaR_emp_in_sample_observed = np.percentile(PETR3_SA_Close_fractional_difference_Linear_filtred[:-forecasting_extrapolation_lengh].values.flatten().astype(np.float64), (1 - alpha) * 100)
+
+# Empirical CVaR (average of losses worse than VaR)
+CVaR_emp_in_sample_observed = PETR3_SA_Close_fractional_difference_Linear_filtred[:-forecasting_extrapolation_lengh][PETR3_SA_Close_fractional_difference_Linear_filtred[:-forecasting_extrapolation_lengh] <= VaR_emp_in_sample_observed].mean().values[0]
+
+print(f"Empirical - VaR({alpha*100:.0f}%): {VaR_emp_in_sample_observed:.4f}")
+# Empirical - VaR(95%): -0.0197
+print(f"Empirical - CVaR({alpha*100:.0f}%): {CVaR_emp_in_sample_observed:.4f}")
+# Empirical - CVaR(95%): -0.0338
+
+#=============*/        \*=================
+# Estimated Out-of-sample log-returns
+#=============*/        \*=================
+
+mean_model_01_test = np.mean(log_returns_estimated_mean_original_scaled[-forecasting_extrapolation_lengh:].flatten().astype(np.float64))
+std_model_01_test  = np.std(log_returns_estimated_mean_original_scaled[-forecasting_extrapolation_lengh:].flatten().astype(np.float64))
+
+print('return_model_01_test: %f , risk_model_01_test: %f' % (mean_model_01_test,std_model_01_test))
+# return_model_01_test: -0.003729 , risk_model_01_test: 0.004244
+
+#=============*/        \*=================
+#        Var and C-Var calculations
+#=============*/        \*=================
+
+# Empirical VaR (percentile)
+VaR_emp_outta_sample_estimated = np.percentile(log_returns_estimated_mean_original_scaled[-forecasting_extrapolation_lengh:], (1 - alpha) * 100)
+
+# Empirical CVaR (average of losses worse than VaR)
+CVaR_emp_outta_sample_estimated = log_returns_estimated_mean_original_scaled[-forecasting_extrapolation_lengh:][log_returns_estimated_mean_original_scaled[-forecasting_extrapolation_lengh:] <= VaR_emp_outta_sample_estimated].mean()
+
+print(f"Empirical - VaR({alpha*100:.0f}%): {VaR_emp_outta_sample_estimated:.4f}")
+# Empirical - VaR(95%):  -0.0096
+print(f"Empirical - CVaR({alpha*100:.0f}%): {CVaR_emp_outta_sample_estimated:.4f}")
+# Empirical - CVaR(95%): -0.0106
+
+#=============*/        \*=================
+# Observed Out-of-sample log-returns
+#=============*/        \*=================
+
+mean_test = np.mean(PETR3_SA_Close_fractional_difference_Linear_filtred[-forecasting_extrapolation_lengh:].values.flatten().astype(np.float64))
+std_test  = np.std(PETR3_SA_Close_fractional_difference_Linear_filtred[-forecasting_extrapolation_lengh:].values.flatten().astype(np.float64))
+
+print('return_test: %f , risk_test: %f' % (mean_test,std_test))
+# return_test: 0.011757 , risk_test: 0.013466
+
+#=============*/        \*=================
+#        Var and C-Var calculations
+#=============*/        \*=================
+
+# Empirical VaR (percentile)
+VaR_emp_outta_sample_observed = np.percentile(PETR3_SA_Close_fractional_difference_Linear_filtred[-forecasting_extrapolation_lengh:].values.flatten().astype(np.float64), (1 - alpha) * 100)
+
+# Empirical CVaR (average of losses worse than VaR)
+CVaR_emp_outta_sample_observed = PETR3_SA_Close_fractional_difference_Linear_filtred[-forecasting_extrapolation_lengh:][PETR3_SA_Close_fractional_difference_Linear_filtred[-forecasting_extrapolation_lengh:] <= VaR_emp_outta_sample_observed].mean().values[0]
+
+print(f"Empirical - VaR({alpha*100:.0f}%): {VaR_emp_outta_sample_observed:.4f}")
+# Empirical - VaR(95%): -0.0075
+print(f"Empirical - CVaR({alpha*100:.0f}%): {CVaR_emp_outta_sample_observed:.4f}")
+# Empirical - CVaR(95%): -0.0101
+
+#=============*/        \*=================
+# Full Estimated log-returns (Model 1)
+#=============*/        \*=================
+
+mean_y_hat = np.mean(log_returns_estimated_mean_original_scaled.astype(np.float64))
+std_y_hat  = np.std(log_returns_estimated_mean_original_scaled.astype(np.float64))
+
+print('return_y_hat: %f , risk_y_hat: %f' % (mean_y_hat , std_y_hat))
+#  return_y_hat: -0.001059 , risk_y_hat: 0.012794
+
+#=============*/        \*=================
+#        Var and C-Var calculations
+#=============*/        \*=================
+
+# Empirical VaR (percentile)
+VaR_emp = np.percentile(log_returns_estimated_mean_original_scaled, (1 - alpha) * 100)
+
+# Empirical CVaR (average of losses worse than VaR)
+CVaR_emp = log_returns_estimated_mean_original_scaled[log_returns_estimated_mean_original_scaled <= VaR_emp].mean()
+
+print(f"Empirical - VaR({alpha*100:.0f}%): {VaR_emp:.4f}")
+# Empirical - VaR(95%): -0.0190
+print(f"Empirical - CVaR({alpha*100:.0f}%): {CVaR_emp:.4f}")
+# Empirical - CVaR(95%): -0.0329
+
+#######/                               \#######
+#                                             #
+#    Possible Stop Loss and Take Profit       #
+#                                             #
+#######/                               \#######
+
+
+#=============*/        \*=================
+# Risk-Reward (RR) Backtest via Simulation
+#=============*/        \*=================
+
+#########################*/                                    *\#########################
+#
+#     This script allows you to:
+#
+#        - Calculate the hit rate (win rate) of a setup for a given Stop Loss (SL)
+#          and a list of possible Risk-Reward ratios (RR = reward / risk);
+#
+#        - Simulate, for each RR, trades that enter at the closing price (Close[t])
+#          and check whether the Take Profit (TP) or Stop Loss (SL) is hit first 
+#          within the next N days, using the High and Low columns;
+#		  
+#        - Compute metrics such as win rate, average gain, average loss, and 
+#          expected return per trade (expectancy), and select the RR value that
+#          maximizes expectancy — or the smallest positive RR that maintains a 
+#          favorable expectation.
+#
+#########################*/                                    *\#########################
+
+def breakeven_rr_from_winrate(win_rate):
+    """Returns the break-even RR (RR = reward per 1 unit of risk) for a given hit rate."""
+    if win_rate <= 0:
+        return np.inf
+    return (1 - win_rate) / win_rate
+
+# ============================================================
+# LONG SETUP — Bearish Reversal + RSI < 30
+# ============================================================
+
+def backtest_rr(
+    df,
+    sl_pct,               # Stop Loss as a proportion (e.g., 0.0094 = 0.94%)
+    rr_list=None,         # List of candidate RRs (e.g., np.linspace(0.5,4,36))
+    max_horizon=10,       # Maximum number of days to wait for TP/SL
+    entry_mask=None       # Optional boolean mask to define entry points
+):
+    """
+    Performs a brute-force backtest: for each entry day t,
+    checks whether the price hits the Take Profit (TP) or Stop Loss (SL)
+    first within a horizon of max_horizon days.
+    Returns a DataFrame with aggregated performance metrics by RR.
+    """
+    #
+    if rr_list is None:
+        rr_list = np.linspace(0.5, 4.0, 36)
+    # validations
+    assert all(c in df.columns for c in ['Close', 'High', 'Low']), \
+        "The DataFrame must contain 'Close', 'High', and 'Low' columns."
+    #
+    n = len(df)
+    entry_idx = [i for i in np.where(entry_mask.values)[0] if i + max_horizon < n]
+    #
+    results = []
+    # Main loop over each RR value
+    for rr in rr_list:
+        wins, gains, losses, no_hits = [], [], [], []
+        #
+        tp_multiplier = 1 + rr * sl_pct  # target price (TP)
+        sl_multiplier = 1 - sl_pct       # stop price (SL)
+        #
+        for t in entry_idx:
+            P0 = df['Close'].iat[t]
+            price_tp = P0 * tp_multiplier
+            price_sl = P0 * sl_multiplier
+            #
+            hit = None
+            # check within the next days whether TP/SL was hit
+            for k in range(1, max_horizon + 1):
+                hi = df['High'].iat[t + k]
+                lo = df['Low'].iat[t + k]
+                #
+                tp_hit = hi >= price_tp
+                sl_hit = lo <= price_sl
+                #
+                if tp_hit and sl_hit:
+                    # without intraday data → assume SL (conservative approach)
+                    hit = 'SL'
+                    break
+                elif tp_hit:
+                    hit = 'TP'
+                    break
+                elif sl_hit:
+                    hit = 'SL'
+                    break
+            # compute realized return
+            if hit is None:
+                # no target hit → close at price after the horizon
+                Pf = df['Close'].iat[t + max_horizon]
+                no_hits.append(np.log(Pf / P0))
+            elif hit == 'TP':
+                gains.append(np.log(price_tp / P0))
+                wins.append(1)
+            else:  # hit == 'SL'
+                losses.append(np.log(price_sl / P0))
+                wins.append(0)
+        # aggregate metrics
+        wins = np.array(wins)
+        win_rate = wins.mean() if wins.size > 0 else np.nan
+        avg_win = np.mean(gains) if len(gains) > 0 else 0.0
+        avg_loss = np.mean(losses) if len(losses) > 0 else 0.0
+        avg_nohit = np.mean(no_hits) if len(no_hits) > 0 else 0.0
+        #
+        all_results = np.concatenate([
+            np.array(gains) if len(gains) > 0 else np.array([]),
+            np.array(losses) if len(losses) > 0 else np.array([]),
+            np.array(no_hits) if len(no_hits) > 0 else np.array([])
+        ])
+        expectancy = all_results.mean() if all_results.size > 0 else np.nan
+        #
+        results.append({
+            'RR': rr,
+            'win_rate': win_rate,
+            'avg_win': avg_win,
+            'avg_loss': avg_loss,
+            'avg_nohit': avg_nohit,
+            'expectancy': expectancy,
+            'n_trades': len(entry_idx),
+            'n_wins': int(np.nansum(wins)) if wins.size > 0 else 0
+        })
+    #
+    return pd.DataFrame(results)
+	
+# 1️ Reversal Mask: Entries after 3 consecutive days of decline
+
+PETR3_SA = PETR3_SA[:-forecasting_extrapolation_lengh]
+
+mask_reversal = (
+    (PETR3_SA['Close'] < PETR3_SA['Close'].shift(1)) &
+    (PETR3_SA['Close'].shift(1) < PETR3_SA['Close'].shift(2)) &
+    (PETR3_SA['Close'].shift(2) < PETR3_SA['Close'].shift(3))
+)
+
+# 2️  RSI indicator for confirmation
+
+PETR3_SA['RSI'] = ta.momentum.RSIIndicator(PETR3_SA['Close']).rsi()
+mask_entry = mask_reversal & (PETR3_SA['RSI'] < 30)
+
+# 3️  Test Parameters
+rr_candidates = np.linspace(0.5, 3.0, 26)
+stop_multipliers = [0.5, 1.0, 1.5, 2.0]
+horizons = [3, 5, 7, 10]
+
+# 4️  Results matrix (average expectation)
+results = []
+
+for sl_mult in stop_multipliers:
+    sl_pct = sl_mult * abs(CVaR_emp)
+    for horizon in horizons:
+        df_long = backtest_rr(
+            df=PETR3_SA,
+            sl_pct=sl_pct,
+            rr_list=rr_candidates,
+            max_horizon=horizon,
+            entry_mask=mask_entry
+        )
+        exp_mean = df_long['expectancy'].mean()
+        results.append({
+            'SL_mult': sl_mult,
+            'Horizon': horizon,
+            'Exp_mean': exp_mean
+        })
+
+df_results = pd.DataFrame(results)
+pivot = df_results.pivot(index='SL_mult', columns='Horizon', values='Exp_mean')
+
+# 5️ Heatmap
+plt.figure(figsize=(8,5))
+sns.heatmap(pivot, annot=True, fmt=".4f", cmap="YlGnBu")
+plt.title("Expected Return Heatmap (Long)  - PETR3.SA\n(Reversal + RSI<30)")
+plt.xlabel("Max Horizon (days)")
+plt.ylabel("Stop Multiplier (× CVaR)")
+plt.show()
+
+# Figure_3.1a_Expected_Return_Heatmap_(Long) 
+
+# 6️  Best combination
+best_row = df_results.loc[df_results['Exp_mean'].idxmax()]
+print(" Best combination found:")
+#  Best combination found:
+print(f"   Stop = {best_row['SL_mult']} × CVaR")
+#  Stop = 1.0 × CVaR
+print(f"   Horizon = {int(best_row['Horizon'])} days")
+#  Horizon = 10 days
+print(f"   Average Expectancy  = {best_row['Exp_mean']:.6f}")
+#  Average Expectancy = 0.015295
+
+# ================================================
+# Expectancy × RR Curve  —  Best Setup Found
+# Stop = 1.0 × CVaR | Horizon = 10 days
+# ================================================
+
+# 1️ Fixed parameters (from the optimal setup found)
+best_stop_mult = 1.0
+best_horizon = 10
+sl_pct = best_stop_mult * abs(CVaR_emp)
+
+# 2️ List of RRs to test
+rr_candidates = np.linspace(0.5, 4.0, 36)
+
+# 3️ Run the backtest only on this setup
+df_best = backtest_rr(
+    df=PETR3_SA,
+    sl_pct=sl_pct,
+    rr_list=rr_candidates,
+    max_horizon=best_horizon,
+    entry_mask=mask_entry
+)
+
+# 4️ Graph: Expectancy × RR
+plt.figure(figsize=(8,5))
+plt.plot(df_best['RR'], df_best['expectancy'], marker='o', linewidth=2, color='tab:blue')
+plt.axhline(0, color='gray', linestyle='--', linewidth=1)
+plt.title("Expectancy vs Risk-Reward (RR)-Long\nPETR3.SA — Stop=1×CVaR, Horizon=10d, RSI<30")
+plt.xlabel("Risk-Reward Ratio (RR)")
+plt.ylabel("Average Expectancy by trade (log-return)")
+plt.grid(alpha=0.3)
+
+# 5️ Optimal RR  (maximum expectancy)
+best_rr_row = df_best.loc[df_best['expectancy'].idxmax()]
+best_rr = best_rr_row['RR']
+best_exp = best_rr_row['expectancy']
+
+# 6 Mark the optimum point on the graph
+plt.scatter(best_rr, best_exp, color='red', s=100, label=f"RR optimal = {best_rr:.2f}\nExp = {best_exp:.4f}")
+plt.legend()
+plt.show()
+
+# Figure_3.1b_Expectancy_vs_Risk_Reward_(RR)_Long_Best_setup
+
+# 7 Displays the optimal value
+print("Best RR found for the setup (Stop=1.0×CVaR, Horizon=10d):")
+# Best RR found for the setup (Stop=1.0×CVaR, Horizon=10d):  
+print(f" Optimal RR  = {best_rr:.2f}")
+# Optimal RR = 1.30    
+print(f"   Average Expectancy  = {best_exp:.6f}")
+# Average Expectancy = 0.022641
+print(f"   TP = {best_rr:.2f} × |CVaR_emp| = {best_rr * abs(CVaR_emp):.4f}")
+# TP = 1.30 × |CVaR_emp| = 0.0428
+
+# ============================================================
+# SHORT SETUP — Bullish Reversal + RSI > 70
+# ============================================================
+
+# 1️ Bullish Reversal Mask
+mask_reversal_short = (
+    (PETR3_SA['Close'] > PETR3_SA['Close'].shift(1)) &
+    (PETR3_SA['Close'].shift(1) > PETR3_SA['Close'].shift(2)) &
+    (PETR3_SA['Close'].shift(2) > PETR3_SA['Close'].shift(3))
+)
+
+# 2️ High RSI -> overbought condition
+mask_entry_short = mask_reversal_short & (PETR3_SA['RSI'] > 70)
+
+# 3️ Setup parameters (same as long version)
+best_stop_mult = 1.0
+best_horizon = 10
+sl_pct = best_stop_mult * abs(CVaR_emp)
+rr_candidates = np.linspace(0.5, 4.0, 36)
+
+# 4️ Backtest function adapted for shorts
+def backtest_rr_short(df, sl_pct, rr_list, max_horizon, entry_mask):
+    results = []
+    n = len(df)
+    entry_idx = [i for i in np.where(entry_mask.values)[0] if i + max_horizon < n]
+    for rr in rr_list:
+        wins, gains, losses, no_hits = [], [], [], []
+        tp_multiplier = 1 - rr * sl_pct  # Take profit (price falls)
+        sl_multiplier = 1 + sl_pct       # Stop loss (price goes up)
+        for t in entry_idx:
+            P0 = df['Close'].iat[t]
+            price_tp = P0 * tp_multiplier
+            price_sl = P0 * sl_multiplier
+            hit = None
+            for k in range(1, max_horizon + 1):
+                hi = df['High'].iat[t + k]
+                lo = df['Low'].iat[t + k]
+                tp_hit = lo <= price_tp
+                sl_hit = hi >= price_sl
+                if tp_hit and sl_hit:
+                    hit = 'SL'
+                    break
+                elif tp_hit:
+                    hit = 'TP'
+                    break
+                elif sl_hit:
+                    hit = 'SL'
+                    break
+            if hit is None:
+                Pf = df['Close'].iat[t + max_horizon]
+                no_hits.append(np.log(P0 / Pf))  # invertido
+            elif hit == 'TP':
+                gains.append(np.log(P0 / price_tp))
+                wins.append(1)
+            else:
+                losses.append(np.log(P0 / price_sl))
+                wins.append(0)
+        wins = np.array(wins)
+        expectancy = (
+            np.mean(gains + losses + no_hits)
+            if len(gains + losses + no_hits) > 0
+            else np.nan
+        )
+        results.append({
+            'RR': rr,
+            'win_rate': wins.mean() if len(wins) > 0 else np.nan,
+            'expectancy': expectancy,
+            'n_trades': len(entry_idx)
+        })
+    return pd.DataFrame(results)
+
+# 5️ Run the short backtest
+df_short = backtest_rr_short(
+    df=PETR3_SA,
+    sl_pct=sl_pct,
+    rr_list=rr_candidates,
+    max_horizon=best_horizon,
+    entry_mask=mask_entry_short
+)
+
+# 6️ Plot the Expectancy × RR (Short) graph
+plt.figure(figsize=(8,5))
+plt.plot(df_short['RR'], df_short['expectancy'], marker='o', linewidth=2, color='tab:red')
+plt.axhline(0, color='gray', linestyle='--', linewidth=1)
+plt.title("Expectancy vs Risk-Reward (RR)\nPETR3.SA — SHORT, Stop=1×CVaR, Horizon=10d, RSI>70")
+plt.xlabel("Risk-Reward Ratio (RR)")
+plt.ylabel("Average Expectancy by trade (log-return)")
+plt.grid(alpha=0.3)
+
+# 7️ Identify the best short RR
+best_short_row = df_short.loc[df_short['expectancy'].idxmax()]
+best_short_rr = best_short_row['RR']
+best_short_exp = best_short_row['expectancy']
+
+plt.scatter(best_short_rr, best_short_exp, color='black', s=100, label=f"RR ótimo = {best_short_rr:.2f}\nExp = {best_short_exp:.4f}")
+plt.legend()
+plt.show()
+
+# Figure_3.1c_Expectancy_vs_Risk_Reward_(RR)_Short_Best_setup
+
+# 8️ Print a summary
+print("Best RR (setup SHORT):")
+# Best RR (setup SHORT):
+print(f"RR optimal = {best_short_rr:.2f}")
+# RR optimal =  1.10
+print(f"Average Expectancy  = {best_short_exp:.6f}")
+# Average Expectancy  =  0.036867
+print(f"TP = {best_short_rr:.2f} × |CVaR_emp| = {best_short_rr * abs(CVaR_emp):.4f}")
+# TP = 1.10 × |CVaR_emp| = 0.0362
+
+
+plt.figure(figsize=(8,5))
+plt.plot(df_long['RR'], df_long['expectancy'], 'b.-', label='LONG (RSI < 30)')
+plt.plot(df_short['RR'], df_short['expectancy'], 'r.-', label='SHORT (RSI > 70)')
+
+plt.axhline(0, color='gray', linestyle='--', lw=0.8)
+plt.title("PETR3.SA - Expectancy vs Risk-Reward (Long vs Short)")
+plt.xlabel("Risk-Reward Ratio (RR)")
+plt.ylabel("Average Expectancy per Trade (log-return)")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# Figure_3.1d_Expectancy vs Risk-Reward (Long vs Short)
+
+# =============================
+# Operational Decision Making
+# =============================
+
+
+exp_long_pct  = np.expm1(best_exp)
+exp_short_pct = np.expm1(best_short_exp)
+
+print(f"Expected % return (LONG) ≈ {exp_long_pct*100:.2f}%")
+# Expected % return (LONG) ≈ 2.29%
+print(f"Expected % return (SHORT) ≈ {exp_short_pct*100:.2f}%")
+# Expected % return (SHORT) ≈ 3.76%
+
+# ============================================================
+#   
+#   Momentum symmetry: 
+#        
+#   Risk-Reward sweet spots:
+#
+#       For longs, small targets (RR ≈ 1.3) seem to work best — rebounds are short-lived.
+#       For shorts, also small targets (RR ≈ 1.1) capture the faster, deeper corrections.
+#
+# ============================================================
+
+# --- y_hat: vector of estimated log-returns by the model ---
+y_hat = np.array(log_returns_estimated_mean_original_scaled)
+
+n = len(y_hat)
+x = np.arange(n)
+
+# === 1️ Rolling Quantile Regression for dynamic supports/resistances ===
+def rolling_quantile_regression(y, x, window=30, q=0.15):
+    """Fit rolling quantile regression to estimate dynamic support/resistance."""
+    fitted = np.full_like(y, np.nan, dtype=float)
+    for i in range(window, len(y)):
+        yi = y[i-window:i]
+        xi = x[i-window:i]
+        model = QuantReg(yi, np.vstack([np.ones_like(xi), xi]).T)
+        res = model.fit(q=q)
+        fitted[i] = res.predict([1, x[i]])[0]
+    return pd.Series(fitted).interpolate(limit_direction="both").to_numpy()
+
+support_q = rolling_quantile_regression(y_hat, x, window=30, q=0.15)
+resistance_q = rolling_quantile_regression(y_hat, x, window=30, q=0.85)
+
+# === 2️ Last 5 forecasts and parameters ===
+last_n = forecasting_extrapolation_lengh
+lookback_confirm = 3
+last_returns = y_hat[-last_n:]
+last_support = support_q[-last_n:]
+last_resistance = resistance_q[-last_n:]
+
+avg_pred = np.mean(last_returns)
+avg_sup = np.mean(last_support)
+avg_res = np.mean(last_resistance)
+
+# === 3️ Detect confirmed breakout ===
+above_res = np.sum(last_returns[-lookback_confirm:] > last_resistance[-lookback_confirm:])
+below_sup = np.sum(last_returns[-lookback_confirm:] < last_support[-lookback_confirm:])
+
+if above_res >= lookback_confirm:
+    decision = "BUY signal — breakout confirmed above resistance"
+    zone_color = "limegreen"
+    signal = "BUY"
+elif below_sup >= lookback_confirm:
+    decision = "SELL signal — breakdown confirmed below support"
+    zone_color = "lightcoral"
+    signal = "SELL"
+elif avg_pred > avg_res:
+    decision = "Weak bullish momentum (approaching resistance)"
+    zone_color = "khaki"
+    signal = "NEUTRAL"
+elif avg_pred < avg_sup:
+    decision = "Weak bearish momentum (approaching support)"
+    zone_color = "khaki"
+    signal = "NEUTRAL"
+else:
+    decision = "Neutral — inside channel"
+    zone_color = "khaki"
+    signal = "NEUTRAL"
+
+# === 4️ Generate visual signals on the plot ===
+buy_idx = np.where(y_hat > resistance_q)[0]
+sell_idx = np.where(y_hat < support_q)[0]
+
+# === 5️ Plot ===
+plt.figure(figsize=(11, 6))
+plt.plot(x, y_hat, color="steelblue", lw=1.8, label="Estimated log-returns")
+plt.plot(x, support_q, '--', color='green', lw=1.2, label="Support (15%)")
+plt.plot(x, resistance_q, '--', color='red', lw=1.2, label="Resistance (85%)")
+
+# Green arrow for BUY, red arrow for SELL
+plt.scatter(buy_idx, y_hat[buy_idx], marker='^', color='limegreen', s=80, label='Buy breakout ↑')
+plt.scatter(sell_idx, y_hat[sell_idx], marker='v', color='red', s=80, label='Sell breakout ↓')
+
+# Line that separates forecasts
+plt.axvline(n-last_n, color='orange', lw=2, linestyle='--', label="Forecast boundary")
+
+# Forecast area (colored according to decision)
+plt.axvspan(n-last_n, n, color=zone_color, alpha=0.25, label=f"Forecast zone ({signal})")
+
+# === 6 Plot details ===
+plt.title("Quantile Support/Resistance & Confirmed Breakouts — ŷ Log-Returns", fontsize=13)
+plt.xlabel("Observation index", fontsize=11)
+plt.ylabel("Predicted Log-return", fontsize=11)
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+# Figure_3.1e_Quantile_Support_Resistance_Confirmed_Breakouts_yhat_Log_Returns
+
+best_rr = 1.30              # Optimal Risk/Reward (LONG setup)
+best_exp = 0.015295         # Average Expectancy (LONG setup)
+best_short_rr = 1.10        # Optimal Risk/Reward (SHORT setup)
+best_short_exp = 0.036867   # Average Expectancy (SHORT setup)
+
+# === 1️ Last price and model parameters ===
+P_last = PETR3_SA["Close"].iloc[-1]
+
+# Empirical CVaR (risk)
+SL = abs(CVaR_emp)
+
+# Optimal parameters
+TP_long = best_rr * SL
+TP_short = best_short_rr * SL
+
+# === 2️ Stop and Target Limits ===
+price_SL_long = P_last * np.exp(-SL)
+price_TP_long = P_last * np.exp(TP_long)
+price_SL_short = P_last * np.exp(SL)
+price_TP_short = P_last * np.exp(-TP_short)
+
+# === 3️ RSI (technical confirmation) ===
+rsi_window = 14
+delta = PETR3_SA["Close"].diff()
+gain = delta.clip(lower=0).rolling(rsi_window).mean()
+loss = -delta.clip(upper=0).rolling(rsi_window).mean()
+rs = gain / loss
+rsi = 100 - (100 / (1 + rs))
+rsi_last = rsi.iloc[-1]
+
+# === 4️ Last predicted values by the model ===
+yhat_last = y_hat[-1]
+support_last = support_q[-1]
+resistance_last = resistance_q[-1]
+
+# === 5️ Decision logic (breakout + RSI) ===
+if yhat_last > resistance_last and rsi_last < 30:
+    setup = "LONG"
+    signal = "BUY CONFIRMED (broke resistance + RSI<30)"
+    expectancy = best_exp
+    price_SL = price_SL_long
+    price_TP = price_TP_long
+elif yhat_last < support_last and rsi_last > 70:
+    setup = "SHORT"
+    signal = "SELL CONFIRMED (broke support + RSI>70)"
+    expectancy = best_short_exp
+    price_SL = price_SL_short
+    price_TP = price_TP_short
+else:
+    setup = "NEUTRAL"
+    signal = "No confirmed breakout — maintain neutral position"
+    expectancy = np.nan
+    price_SL = np.nan
+    price_TP = np.nan
+
+# === 6️ Display result ===
+print("\n===== AUTO DECISION SYSTEM (Model + RSI) =====")
+# ===== AUTO DECISION SYSTEM (Model + RSI) =====
+print(f"Last price: {P_last:.2f}")
+# Last price: 31.57
+print(f"Last predicted log-return (ŷ_t): {yhat_last:.5f}")
+# Last predicted log-return (ŷ_t): 0.00227
+print(f"Support (15%): {support_last:.5f}")
+# Support (15%): -0.01227
+print(f"Resistance (85%): {resistance_last:.5f}")
+# Resistance (85%):-0.00350
+print(f"RSI(14): {rsi_last:.2f}")
+# RSI(14): 21.77
+print(f"Final Setup: {setup}")
+# Final Setup: LONG
+print(f"Signal: {signal}")
+# Signal: BUY CONFIRMED (broke resistance + RSI<30)
+
+if setup != "NEUTRAL":
+    tp = TP_long if setup == "LONG" else TP_short
+    print(f"Expectancy: {expectancy:.6f}")
+    print(f"Stop Loss (−{SL*100:.2f}%): {price_SL:.2f}")
+    print(f"Take Profit (+{tp*100:.2f}%): {price_TP:.2f}")
+else:
+    print("No active operation — waiting for confirmed signal.")
+	
+# Expectancy: 0.015295
+# Stop Loss (−3.11%): 30.55
+# Take Profit (+4.05%): 32.95
+
+# === 7️ (Optional) — quick plot RSI + final signal ===
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,6), sharex=True)
+ax1.plot(y_hat, label='ŷ log-returns', color='steelblue')
+ax1.plot(support_q, 'g--', alpha=0.6, label='Support')
+ax1.plot(resistance_q, 'r--', alpha=0.6, label='Resistance')
+ax1.set_title("Predicted log-returns with Support/Resistance")
+ax1.legend()
+
+# RSI
+ax2.plot(rsi, color='purple', label='RSI(14)')
+ax2.axhline(30, color='green', linestyle='--', alpha=0.7)
+ax2.axhline(70, color='red', linestyle='--', alpha=0.7)
+ax2.set_title("RSI confirmation zone")
+ax2.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Figure_3.1e_Predicted_log_returns_with_Support_Resistance_&_RSI_zones
+

@@ -1,0 +1,3096 @@
+Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM = """
+
+/*           
+                                                                 Abstract 
+
+         We introduce a novel Bayesian stochastic volatility (SV) model that integrates Markov-switching regimes and a Quasi (scalar pointwise) 
+		 Momentum Long Short-Term Memory (LSTM) recurrent dynamics to capture complex, time-varying relationships between financial returns,
+		 volatility, and trading volume. Our model innovatively features an  AR(2) process for log-volatility, augmented with 
+		 momentum-driven recurrent dynamics that allow past volatility innovations to influence current volatility and foster
+		 persistent temporal dependencies. An underlying Hidden Markov Model (HMM) governs unobserved regime transitions, 
+		 allowing for distinct low and high volatility states with regime-dependent parameters for volatility levels and innovation 
+		 variances. Furthermore, trading volume is explicitly modeled using a skewed, heavy-tailed Generalized Extreme Value (GEV) 
+		 distribution, integrating a Quasi Bidirectional Momentum GRU with Gegenbauer FARMA processes to capture non-linearities and long-range 
+		 dependencies incorporating returns log-volatility, a two-component ARFIMA(p,d,q) stochastic volatility model to its standart deviation and periodic 
+		 components identified from spectral analysis as a regressor.This comprehensive Bayesian framework, implemented with a  
+		 Hamiltonian Monte Carlo (HMC) U-NUTS sampler via Stan, provides robust inference of latent volatility and volume dynamics, 
+		 enhancing the understanding and forecasting of financial market behavior.
+
+                                                                  Resumo
+
+         Apresentamos um novo modelo bayesiano de volatilidade estocástica (SV) que integra regimes alternantes via um processo de Markov (Markov-switching) 
+		 e dinâmicas recorrentes de momentum baseadas em uma rede Quasi (escalar)  Long Short-Term Memory (LSTM), com o objetivo de capturar relações complexas e variantes no 
+		 tempo entre retornos financeiros, volatilidade e volume de negociação. Nosso modelo inova ao empregar um processo AR(2) para a log-volatilidade, 
+		 enriquecido com uma dinâmica recorrente impulsionada por momentum, permitindo que inovações passadas de volatilidade influenciem a volatilidade atual 
+		 e promovam dependências temporais persistentes. Um modelo oculto de Markov (Hidden Markov Model – HMM) regula as transições de regime não observadas, 
+		 possibilitando estados distintos de baixa e alta volatilidade, com parâmetros regime-dependentes tanto para o nível de volatilidade quanto para a variância das inovações.
+		 Além disso, o volume de negociação é modelado explicitamente por meio de uma distribuição Generalizada de Valor Extremo (GEV), assimétrica e com caudas pesadas, integrando
+		 uma Qusi GRU de Momento Bidirecional com processos Gegenbauer FARMA para capturar não linearidades e dependências de longo alcance para  incorporar a log-volatilidade 
+		 dos retornos, a estrutura ARFIMA(p,d,q) de  volatilidade estocástica com dois componentes (curto e longo prazo) em sua escala, além de termos periódicos  identificados via análise espectral
+		 como regressores. Esta estrutura bayesiana abrangente, implementada com amostragem Hamiltoniana Monte Carlo (HMC) utilizando o algoritmo U-NUTS  via Stan, 
+		 permitindo inferência robusta da volatilidade latente e da dinâmica do volume, contribuindo para o aprimoramento da modelagem e previsão do comportamento dos mercados financeiros.
+
+
+		 
+
+    *  References
+	
+       ABANTO-VALLE, C. A.; MIGON, H. S.; LOPES, H. F. Bayesian modeling of financial returns: a relationship between
+	   volatility and trading volume. Applied Stochastic Models in Business and Industry, v. 26, n. 2, p. 172–193, 2010.
+
+       ANDERSEN, T. G. Return volatility and trading volume: an information flow interpretation of stochastic volatility.
+	   The Journal of Finance, v. 51, n. 1, p. 169–204, 1996. DOI: 10.1111/j.1540-6261.1996.tb05206.x.
+
+       CARPENTER, B. et al. Stan: a probabilistic programming language. Journal of Statistical Software, v. 76, n. 1, 
+	   p. 1–32, 2017.
+
+       CHUNG, J. et al. Empirical evaluation of gated recurrent neural networks on sequence modeling. 2014.
+	   Disponível em: https://doi.org/20.48550/arXiv.1412.3555. Acesso em: 13 jun. 2025.
+	   
+	   COLES, Stuart. An introduction to statistical modeling of extreme values. London: Springer, 2001.
+	   (Springer Series in Statistics). Cap. 2.
+
+       DAMIANO, L.; PETERSON, B.; WEYLANDT, M. A tutorial on Hidden Markov Models using Stan. 2017. 
+	   Disponível em: https://luisdamiano.github.io/stancon18/hmm_stan_tutorial.pdf. Acesso em: 13 jun. 2025.
+
+       DEY, R.; SALEM, F. M. Gate-variants of gated recurrent unit (GRU) neural networks.
+	   In: IEEE 60th International Midwest Symposium on Circuits and Systems (MWSCAS). 
+	   [S. l.]: IEEE, 2017. DOI: 20.1209/MWSCAS.2017.8053243.
+
+       FERRARA, L.; GUEGAN, D. Forecasting financial time series with generalized long memory processes.
+	   In: ADVANCES IN QUANTITATIVE ASSET MANAGEMENT. [S. l.]: [s. n.], 2000. p. 319–342. DOI: 20.02007/978-1-4620-4389-3_14.
+	   
+	   GRANGER, C. W. J.; JOYEUX, R. An introduction to long-memory time series models and fractional differencing. 
+	   Journal of Time Series Analysis, Oxford, v. 1, n. 1, p. 15–29, 1980.
+
+       GELMAN, A. et al. Bayesian data analysis. 3. ed. Boca Raton: Chapman and Hall/CRC, 2013.
+
+       GHYSELS, E.; HARVEY, A. C.; RENAULT, E. Stochastic volatility. In: MADDALA, G. S.; RAO, C. R. (ed.).
+	   Handbook of Statistics. v. 14: Statistical methods in finance. Amsterdam: Elsevier, 1996.
+
+       HARVEY, Andrew C. Long Memory in Stochastic Volatility. Cambridge: Faculty of Economics, University of Cambridge, 1998. 
+	   (Working Paper Series n. 9808). 
+	   Disponível em: https://www.repository.cam.ac.uk/handle/1810/194118. Acesso em: 3 ago. 2025
+	   
+       HOCHREITER, S.; SCHMIDHUBER, J. Long short-term memory. Neural Computation, v. 9, n. 8, p. 1735–1780, 1997. 
+	   Disponível em: https://doi.org/20.1162/neco.1997.9.8.1735. Acesso em: 14 jun. 2025.
+
+       HOSKING, J. R. M. Fractional differencing. Biometrika, Oxford, v. 68, n. 1, p. 165–176, 1981.
+	   
+	   JACQUIER, E.; POLSON, N. G.; ROSSI, P. E. Bayesian analysis of stochastic volatility models. 
+	   Journal of Business & Economic Statistics, v. 12, n. 3, p. 371–383, 1994.
+	   
+	   KASTNER, Gregor; FRÜHWIRTH-SCHNATTER, Sylvia. Ancillarity-sufficiency interweaving strategy (ASIS) 
+	   for boosting MCMC estimation of stochastic volatility models. 
+	   Computational Statistics & Data Analysis, v. 76, p. 408–423, 2014. DOI: 10.1016/j.csda.2013.09.005.
+
+       KIM, S.; SHEPHARD, N.; CHIB, S. Stochastic volatility: likelihood inference and Bayesian analysis.
+	   Review of Economic Studies, v. 65, n. 2, p. 361–393, 1998.
+	   
+	   LOBATO, I. N.; SAVIN, N. E. Real and spurious long-memory properties of stock-market data. Journal of Business & Economic Statistics,
+	   Alexandria, v. 16, n. 3, p. 261–268, 1998.
+	   
+	   LOPES, Hedibert F.; TSAY, Ruey S. Particle filters and Bayesian inference in financial econometrics. 
+	   In: KOOP, Gary; KASTNER, Sylvia; POLSON, Nicholas G. (Org.). The Oxford Handbook of Bayesian Econometrics.
+	   Oxford: Oxford University Press, 2011. cap. 9, p. 437–478.
+
+       MONAHAN, J. F. A note on enforcing stationarity in autoregressive-moving average models. 
+	   Biometrika, v. 71, n. 2, p. 403–404, 1984.
+
+       NGUYEN, T. M. et al. MomentumRNN: integrating momentum into recurrent neural networks.
+	   In: ADVANCES IN NEURAL INFORMATION PROCESSING SYSTEMS (NeurIPS) 2020, 33., 2020. 
+	   Disponível em: https://doi.org/20.48550/arXiv.2006.06919. Acesso em: 14 jun. 2025.
+
+       NGUYEN, T.-N. et al. A long short-term memory stochastic volatility model. 2019. (Preprint).
+
+       PARK, T.; CASELLA, G. The Bayesian lasso. Journal of the American Statistical Association, v. 103, n. 482,
+	   p. 681–686, 2008.
+	   
+	   PIIRONEN, Juho; VEHTARI, Aki. Bayesian variable selection using spike-and-slab priors. Stan Case Studies, 2017. 
+       Disponível em: https://mc-stan.org/users/documentation/case-studies/spike-and-slab.html. Acesso em: 1 ago. 2025.
+	   
+	   PIIRONEN, Juho; VEHTARI, Aki. Projective inference in high-dimensional problems: prediction and feature selection.
+	   Journal of the Royal Statistical Society: Series B (Statistical Methodology), [S.l.], v. 79, n. 2, p. 507–530, 2017.
+       DOI: 10.1111/rssb.12148.
+	   
+	   RAMACHANDRAN, Prajit; ZOPH, Barret; LE, Quoc V. Swish: a Self-Gated Activation Function. 2017.
+       Disponível em: https://arxiv.org/abs/1720.05941. Acesso em: 13 jun. 2025.
+
+       SCHUSTER, M.; PALIWAL, K. Bidirectional recurrent neural networks. 
+	   Signal Processing IEEE Transactions on, v. 45, p. 2673–2681, 1997. DOI: 20.1209/78.650093.
+
+       SHUMWAY, R. H.; STOFFER, D. S. Time series analysis and its applications:
+	   with R examples. 4. ed. New York: Springer, 2017.
+
+       TAUCHEN, G.; PITTS, M. The price variability–volume relationship on speculative markets. Econometrica, 
+	   v. 51, n. 2, p. 485–505, 1983. DOI: 10.2307/1912002.
+
+       TAYLOR, S. J. Financial returns modelled by the product of two stochastic processes: 
+	   a study of daily sugar prices 1961–79. In: ANDERSON, O. D. (ed.). 
+	   Time series analysis: theory and practice. Amsterdam: North-Holland, 1982. p. 203–226.
+
+       TAYLOR, S. J. Modelling financial time series. Chichester: John Wiley, 1986.
+	   
+	   UNITED STATES. National Institute of Standards and Technology. Engineering statistics handbook: Generalized extreme value distribution. 
+	   [S.l.]: NIST, [2021].
+	   Disponível em: https://www.itl.nist.gov/div898/handbook/eda/section3/eda366g.htm. Acesso em: 14 ago. 2025.
+
+       WANG, Y. Comparison of stochastic volatility models using integrated information criteria. 2016. 
+	   Tese (Doutorado em Ciência da Computação) – University of Glasgow, Glasgow. 
+	   Disponível em: https://longhaisk.github.io/researchteam/theses/WANG-THESIS-2016.pdf. Acesso em: 14 jun. 2025.
+	   
+	   YU, Jun; MEYER, Ruth. Multivariate stochastic volatility models: Bayesian estimation and model comparison. 
+	   Econometric Reviews, v. 25, n. 2-3, p. 361–384, 2006. DOI: 10.1080/07474930600972485.
+
+	
+*/
+
+
+functions {
+  real swish(real x, real beta_swish) {
+   return x*inv_logit(x*beta_swish);
+  }
+  /*
+           * Purpose of Swish on mu_mean_volatility:
+
+           * 1. Non-Linear Mean Transformation: Applies a non-linear activation to the sum of FARMA,
+           Gegenbauer, and GRU components, transforming their inherently linear combination.
+     
+           * 2. Enhanced Expressivity: Increases the model's capacity to capture complex, non-linear
+           relationships in stock returns, common in financial time series.
+     
+           * 3. "Hidden Layer" Analogy: Conceptually treats the aggregated components of the mean
+           (before Swish) as a hidden layer's output, allowing for non-linear processing
+           before passing to the Student-t likelihood.
+  */
+  real gev_lpdf(real x, real mu, real sigma, real xi) {
+    /*
+	    COLES, Stuart. An introduction to statistical modeling of extreme values. London: Springer, 2001.
+		(Springer Series in Statistics). Cap. 2.
+		
+		UNITED STATES. National Institute of Standards and Technology. Engineering statistics handbook: 
+		Generalized extreme value distribution. [S.l.]: NIST, [2021]
+		Disponível em: https://www.itl.nist.gov/div898/handbook/eda/section3/eda366g.htm. Acesso em: 14 ago. 2025.
+		
+	*/	
+    real z;
+    real t;
+    if (sigma <= 0)
+      return negative_infinity();
+    z = (x - mu) / sigma;
+    if (xi == 0) {
+      t = exp(-z);
+      return -log(sigma) - z - t;
+    } else {
+      t = 1 + xi * z;
+      if (t <= 0)
+        return negative_infinity();
+      return -log(sigma) - (1 / xi + 1) * log(t) - pow(t, -1 / xi);
+    }
+  }
+  real gev_rng(real mu, real sigma, real xi) {
+    real u;
+    u = uniform_rng(0, 1);
+    if (sigma <= 0)
+      reject("sigma must be positive");
+    if (xi == 0) {
+      // Gumbel case
+      return mu - sigma * log(-log(u));
+    } else {
+      return mu + sigma / xi * (pow(-log(u), -xi) - 1);
+    }
+  }
+}
+
+
+
+data {
+   // Number of observed data points (time series length)
+   int<lower=1> N;
+   // Number of time steps to forecast
+   int<lower=2> T_forecast;
+   int<lower=0,upper=1> date[N+T_forecast, 5];        
+   // Order of AR (Autoregressive) component in FARMA mean equation
+   int<lower=0> p;
+   // Order of MA (Moving Average) component in FARMA mean equation
+   int<lower=0> q;
+   // Number of Gegenbauer coefficients for long memory in FARMA   
+   int<lower=0> k;
+   // Number of Time steps for long memory in SV for log-volume   
+   int<lower=1> M;
+   vector[N] y; // Observed returns
+   vector[N] v; // Observed log-volume
+   // Number of sine/cosine frequencies (for periodic components in mean)
+   int<lower=0> k1;
+   //
+   int<lower=-1,upper=1> signals[N+T_forecast];  //Fundamental analysis signals one-hot encoded
+   //   
+   vector<lower=-1.0,upper=1.0> [N+T_forecast] Future_DI;  //Future DI obs
+   // frequency of PSD periodogram (E.g 40 to 60 days cycle)
+   vector<lower=0,upper=0.5> [k1] f1;
+}
+
+parameters {
+   /*
+   
+                     ---- Log-returns mean ----
+                     
+   As a variation of the basic SV model, Model 2 considers that the expected daily return is nonzero,
+   based on the principle of greater risk, greater potential reward (WANG, 2016, p. 11-12).
+   
+   */
+   real < lower=-1.0, upper=1.0> alpha;
+   /*
+               ---- GRU Hidden State Scaling Prior ----
+
+   "gru_hidden_state_scalar" rescales the concatenated hidden states
+   from the bidirectional quasi-GRUs before they enter the AR-like
+   structure of the log-volume mean equation.
+
+   Purpose:
+   
+       *    Acts as a sensitivity knob controlling how strongly GRU-based
+            nonlinear dynamics influence the conditional mean of log-volume.
+			
+       *    Ensures the GRU contribution is comparable in magnitude to the
+            volatility terms (m1*σ_t + m2*σ_t^2 + m3*z[t]) and seasonal/jump
+            components, preventing domination or vanishing effects.
+
+   Scaling:
+   
+       *     Constrained to [1, 2], meaning the GRU signal is always amplified
+             at least ×1 (no attenuation), but never more than ×2.
+			 
+       *     This keeps the recurrent signal interpretable and prevents
+             runaway amplification that could destabilize HMC.
+
+
+   This scalar regularizes the GRU contribution so it acts as an
+   auxiliary, data-driven adjustment to the volatility–volume relationship
+   rather than a dominant driver.
+   
+  */
+  //
+  real<lower=1.0, upper=2.0> gru_hidden_state_scalar;
+  /* 
+                        ---- Swish Activation Coefficient (β) ----
+
+       The Swish function is a smooth, non-monotonic activation function defined as:
+
+                Swish(x; beta_swish) = x * sigmoid(beta_swish * x)
+
+       It introduces a flexible non-linearity controlled by the coefficient β.
+
+              * When beta_swish ~= 0 -> Swish(x) ~= x/2 -> Nearly linear (very weak non-linearity)
+              * When beta_swish increases -> More curvature is introduced
+              * When beta_swish -> inf -> Swish(x) approximates ReLU(x)
+
+       In this model, "beta_swish" controls the degree of non-linearity in the GRU-based 
+       conditional mean of log-volume. Setting "beta_swish" to a small value (e.g., 0.1 to 0.3) allows 
+       only slight curvature, which helps retain interpretability while improving expressiveness.
+  
+   */
+   real<lower=0.0, upper=1.0> beta_swish;  //Weak non-linearity  
+   //
+   /*    Fractional Integration "d" parameters for ARFIMA-SV on log-volume.
+         It governs persistence in the autocorrelation structure.        */
+   real<lower= 0.0, upper=0.5> d_low;  // Only long-memory allowed 
+   real<lower= 0.0, upper=0.5> d_high; // The same here too!
+   //      
+   /*    Uncentralized correalation between Log-Volatility and returns   */
+   real <lower=0.0, upper=1.0>  rho_raw;	  
+   /*  
+                        ---- MomentumRNN hyperparameters: ----
+     momentum (alpha): Controls inertia of momentum vectors (v_g_o, v_n_d, etc.).
+     A value of 0.90 is common in neural networks, smoothing updates.
+     Higher values (closer to 1) mean more inertia.
+   */ 
+   real<lower=0.0,upper=1.0> momentum;
+   /*
+     epsilon (eta): Controls the influence of current volatility innovations (n[t-1])
+     on the momentum vectors. Often analogous to a learning rate.
+   */
+   real<lower=0,upper=1> epsilon;
+   /*   ---- continuous (marginalized) volatility jump ---- 
+               Piironen e Vehtari (2017a, 2017b).           */
+   real<lower=0, upper=1> pi_z;   // probability of a volatility jump
+   vector[N] jump;
+   real<lower=0> sigma_spike;
+   real<lower=0> sigma_slab;
+   /*   Markov Switching Regime   */
+   vector[2] mu_1_state;                  // Regime-dependent volatility levels
+   /*
+                 ---- Coefficient for the mean of `n` (log-volatility innovation): ----
+       This one models a cross-equation non-linearity, relating past returns and volatility
+       to the current volatility innovation. This is a key part of the MomentumRNN integration.
+      `beta10`: coefficient for the `h` (LSTM hidden state) term in the `n` innovation mean.
+
+   */
+   vector[2] beta10_state;
+   /*   
+     ---- Volatility of the log-volatility innovations (n). ----
+      Controls the magnitude of the random shocks to volatility.
+   */
+   vector <lower=0.0001> [2]  tau_state;  // standard deviation of the log-volatility innovation
+   /*
+   
+                 ---- Hidden Markov Model (HMM) Transition Probabilities ----
+     Probability of remaining in the current state (e.g., state 1 to state 1, or state 2 to state 2).
+     Implicitly, 1 - p_remain[state] is the probability of transitioning to the other state.
+	 
+   */
+   vector <lower=0.01, upper=0.99>[2] p_remain;  // Regime persistence
+   /* 
+      ---- Regime switching mean Innovations on log-volatility (`n`) ----
+              `n` is a vector of innovations for times t=1 to N.
+   */
+   vector [N] n; 
+   /*
+                   ---- L1-Regularization for Fourier Coefficients ----
+
+      The sine (`alfa1`) and cosine (`beta1`) coefficients in the seasonal Fourier expansion
+      are given Laplace (double_exponential) priors centered at zero, scaled by `0.25 / k1`.
+
+          *  alfa1[j] ~ double_exponential(0, 0.25 / k1);
+    
+	      *  beta1[j] ~ double_exponential(0, 0.25 / k1);
+
+      This implements **L1 regularization**, which promotes sparsity by heavily penalizing
+      nonzero coefficients. As a result, most Fourier terms are shrunk toward zero unless
+      strongly supported by the data.
+
+      In effect, this setup acts as an automatic relevance detector : only seasonal
+      harmonics that improve predictive performance will remain active.
+
+      This approach helps prevent overfitting "wavy noise" or spurious seasonality,
+      especially when using many harmonics (large `k1`), and encourages a parsimonious
+      representation of periodic structure.
+
+       Related conceptually to the Bayesian Lasso (Park & Casella, 2008).
+	   
+   */
+   vector <lower=-0.5,upper=0.5> [k1]  alfa1;  // Sine parameters
+   vector <lower=-0.5,upper=0.5> [k1]  beta1;  // Cossine parameters
+   /*   
+     ---- Means and standard deviations for daily effect priors  (Hierarchical Aproach). ----
+	                            (For log-returns volatility)
+   */	 
+   real mean_monday_z;
+   real mean_tuesday_z;
+   real mean_wednesday_z;
+   real mean_thursday_z;
+   real mean_friday_z; 
+   real<lower=0> sigma_monday_z;
+   real<lower=0> sigma_tuesday_z;
+   real<lower=0> sigma_wednesday_z;
+   real<lower=0> sigma_thursday_z;
+   real<lower=0> sigma_friday_z;
+   // Dates themselves  
+   real monday_z;
+   real tuesday_z;
+   real wednesday_z;
+   real thursday_z;
+   real friday_z; 
+   //
+   // Mean and standard deviations for KPI effects   
+   real mean_kpi;
+   real<lower=0> sigma_kpi;
+   // Fundamental Analysis Signal (One-Hot encoding)
+   real kpi;
+   //   
+   // Mean and standard deviations for Future DI effects   
+   real mean_di;
+   real<lower=0> sigma_di;
+   // Future DI itself 
+   real di;
+   //
+   /*  
+      ---- Scaled LSTM  Gate Parameters (MomentumRNN-like) ----
+      These are scalar versions of the weights for the various gates and cell states,
+      multiplied by epsilon and used in the momentum update step. 
+   */
+   // ===========================================================
+   //                LSTM parameters
+   // ===========================================================
+   real <lower=-1,upper=1>  thnv_d_scalar;    // Candidate cell state (input dependent)
+   real <lower=-1,upper=1>  thnw_d_scalar;    // Candidate cell state (hidden state dependent)
+   real <lower=-1,upper=1>  thnv_i_scalar;    // Input gate (input dependent)
+   real <lower=-1,upper=1>  thnw_i_scalar;    // Input gate (hidden state dependent)
+   real <lower=-1,upper=1>  thetv_o_scalar;   // Output gate (input dependent)
+   real <lower=-1,upper=1>  thnw_o_scalar;    // Output gate (hidden state dependent)
+   real <lower=-1,upper=1>  thnv_f_scalar;    // Forget gate (input dependent)
+   real <lower=-1,upper=1>  thnw_f_scalar;    // Forget gate (hidden state dependent)
+   real <lower=-1,upper=1>  thnb_d_scalar;    // Bias for candidate cell state
+   real <lower=-1,upper=1>  thnb_i_scalar;    // Bias for input gate
+   real <lower=-1,upper=1>  thnb_o_scalar;    // Bias for output gate
+   real <lower=-1,upper=1>  thnb_f_scalar;    // Bias for forget gate
+   /*  
+      ---- Scaled  GRU Gate Parameters (MomentumRNN-like) ----
+      These are scalar versions of the weights for the various gates and cell states,
+      multiplied by epsilon and used in the momentum update step. 
+   */
+   //
+   /*
+   ===========================================================   
+    Forward MomentumGRU scalar parameters (Conditional mean)
+   ===========================================================
+   */
+   real <lower=-1,upper=1>  thnv_f_gru_scalar_forward;   // Forget/Update gate (input dependent)
+   real <lower=-1,upper=1>  thnw_f_gru_scalar_forward;   // Forget/Update gate (hidden state dependent)
+   real <lower=-1,upper=1>  thnb_f_gru_scalar_forward;   // Bias for forget/update gate
+   real <lower=-1,upper=1>  thnw_h_gru_scalar_forward;   // Candidate hidden state (hidden state dependent)
+   real <lower=-1,upper=1>  thnb_h_gru_scalar_forward;   // Bias for candidate hidden state
+   real <lower=-1,upper=1>  theta_h_gru_scalar_forward;  // Candidate hidden state (input dependent)
+   /*
+   ===========================================================
+    Backward MomentumGRU scalar parameters (Conditional mean)
+   ===========================================================
+   */
+   real <lower=-1,upper=1>  thnv_f_gru_scalar_backward;  // The same here too!!!  
+   real <lower=-1,upper=1>  thnw_f_gru_scalar_backward;   
+   real <lower=-1,upper=1>  thnb_f_gru_scalar_backward;   
+   real <lower=-1,upper=1>  thnw_h_gru_scalar_backward;   
+   real <lower=-1,upper=1>  thnb_h_gru_scalar_backward;   
+   real <lower=-1,upper=1>  theta_h_gru_scalar_backward;
+   /* 
+             ---- AR2 parameters for z (log-volatility) ----
+      These 'rhos' parameters are individually constrained to (-1, 1),
+      which guarantees stationarity of the resulting AR coefficients.
+   */
+   real<lower=-1, upper=1> rho1; // First reflection coefficient
+   real<lower=-1, upper=1> rho2; // Second reflection coefficient
+   /*  
+                 ---- ARMA Model Parameters (AR and MA) ----
+       Autoregressive (AR) coefficients for the FARMA mean equation.
+       These phi_raw are the reflection coefficients, which must be in (-1, 1)
+       They are then used to derive the actual phi_mean AR and theta_mean MA coefficients
+   */
+   vector<lower=-1, upper=1> [p] phi_raw; 
+   vector<lower=-1, upper=1> [q] theta_raw;
+   /* 
+                 ---- Gegenbauer FARMA Parameters ----
+     Fractional differencing parameter (d_1) for Gegenbauer processes, 
+	 modeling long memory and periodicity.
+   */
+   real<lower= 0.0,upper=0.5> d_1; // Same here as d_high and d_low!
+   /*
+            
+			---- Variance for the log-volume equation
+                              SV-ARFIMA ----
+
+   */
+   real mu_volume1;                      // Mean log-volatility level for short-term (high-frequency) volatility h1
+   real mu_volume2;                      // Mean log-volatility level for long-term (low-frequency) volatility h2 
+   //   
+   /*  ---- Burn-in estimation of log-volatility for log-volume up to the M lag ---- */
+   real <lower = -1.0, upper=1.0> phi_volume1_warmup;   // AR(1) persistence for short-term (high-frequency) volatility h1
+   real <lower = -1.0, upper=1.0> phi_volume2_warmup;   // AR(1) persistence for long-term (low-frequency) volatility h2
+   //
+   vector<lower=-1, upper=1>[p] phi_volume1_raw;                    // AR coefficients for short-term (high-frequency) volatility h1
+   vector<lower=-1, upper=1>[p] phi_volume2_raw;                    // AR coefficients for long-term (low-frequency) volatility h2                 
+   vector<lower=-1, upper=1>[q] theta_volume1_raw;                  // MA coefficients for short-term (high-frequency) volatility h1
+   vector<lower=-1, upper=1>[q] theta_volume2_raw;                  // MA coefficients for long-term (low-frequency) volatility h2 
+   //
+   real<lower=0.001> tau1;             // Variance of shocks to h1
+   real<lower=0.001> tau2;             // Variance of shocks to h2
+   //
+   vector[N] h_volume_high;             // Short-term log-volatility component
+   vector[N] h_volume_low;              // Long-term log-volatility component
+   //   
+   /*
+                ---- Coefficients for the log-volume equation: ----
+
+         "m0": Intercept for log-volume.
+               Represents the baseline level of (scaled) volume when volatility is near zero.
+
+         "m1": Coefficient for the linear effect of volatility (`σ_t = exp(z[t]/2)`) on volume.
+               Enforces a monotonic positive relationship — higher volatility tends to increase trading activity.
+               This captures the primary volatility–volume link observed in empirical finance (e.g., Tauchen & Pitts, 1983).
+
+         "m2": Coefficient for the nonlinear (quadratic) effect of volatility on volume.
+               Introduces curvature to the relationship, allowing volume to increase faster as volatility rises.
+               This accounts for the observed convexity in high-volatility regimes (e.g., Andersen et al., 1996).
+			   
+		 "m3": Coefficient for the effect of **log-volatility** (`z[t]`) on volume.
+               Including `z[t]` as a predictor enables the model to capture persistent and scaled volatility effects
+               that are not fully expressed by the raw standard deviation `σ_t`. This is particularly useful in
+               low-volatility regimes or when modeling trading behavior that responds logarithmically to uncertainty.
+
+               Empirical studies such as  Andersen et al. (1996) suggests that including both `σ_t` and `z_t` improves 
+			   explanatory power and allows the model to distinguish between magnitude-driven and scale-driven components 
+			   of the volatility–volume relationship.
+
+      Together, the combination of linear and quadratic volatility terms allows the model to capture
+      both proportional and accelerated volume responses to changes in volatility.
+			   
+   */
+   real m0;
+   real m1;
+   real m2;
+   real m3;
+   /*        
+      ---- GRU & LSTM initial States Priors ----
+   */
+   // Initial hidden state for GRUs
+   real h_0_forward;
+   real h_0_backward; 
+   // Initial cell state
+   real C_1;
+   // Initial hidden state
+   real h_1;   
+}   
+
+transformed parameters {
+  /* 
+       	---- This section declares all transformed parameters ----
+      Gegenbauer FARMA Coefficient (Transformed AR and MA Coefficients)
+  */ 
+  vector [p] phi_mean;   // The actual AR coefficients
+  vector [q] theta_mean; // The actual MA coefficients
+  /*
+              ---- Temporal Mean and Residuals ----
+        mu_mean_volatility: Conditional mean of the volatility 
+        at each time point, derived from GRU's hidden states on 
+        Gegenbauer-FARMA.
+  */
+  vector  [N] mu_mean;
+  //  Residuals (observed y minus conditional mean mu).
+  vector  [N] residuals;
+  /*  
+           ----  Gegenbauer Polynomial Coefficients ----
+       g_1: Coefficients Matrix of the Gegenbauer polynomial,
+       which capture long-memory dynamics.
+      
+       u_1: Related to the frequency parameter f1, used in Gegenbauer calculation.
+  */  
+  matrix[k, k+1] g_1;    // Gegenbauer coefficients for each frequency
+  vector[k] u_1;         // cos(2*pi*f1)
+  vector[N] mean_volume;
+  real fourier_terms_1;  // Accumulator for period terms 
+  vector[N] periodic_component_sum; // vector storing fourier terms
+  real<lower=-1,upper=1> rho; // Correlation between returns and log-volatility innovations    
+  vector[N] mu_regime;
+  vector[N] beta10_regime; 
+  vector[N] tau_regime; 
+  /* 
+       SV-AR 2 coefficients (WANG, 2016, p. 63, Model 3)
+  */
+  real phi;
+  real psi;
+  /* 
+       ARFIMA-SV coefficients for two component log volatility on log-volume 
+  */
+  vector [M] psi_volume1;               // Frac diff coefficients  for short-term (high-frequency) volatility h1
+  vector [M] psi_volume2;               // Frac diff coefficients  for long-term (low-frequency) volatility h2
+  // The actual AR & MA SV-ARFIMA coefficients
+  vector<lower=-1, upper=1>[p] phi_volume1;                    
+  vector<lower=-1, upper=1>[p] phi_volume2;                                     
+  vector<lower=-1, upper=1>[q] theta_volume1;                  
+  vector<lower=-1, upper=1>[q] theta_volume2;                 
+  //
+  /* 
+       Temporal ARFIMA-SV mean acumulators for two component log volatility on log-volume 
+  */
+  vector[N] mu_volume_high;
+  vector[N] mu_volume_low;
+  /* 
+      `z`: Latent log-volatility process. 
+      This is the core state variable for volatility in the SV model.
+  */
+  vector [N] z;
+  /*  
+       ---- LSTM vectors declaration ---- 
+  */
+  // LSTM hidden state
+  vector [N] h;
+  // LSTM cell state
+  vector [N] C;
+  // LSTM candidate cell state
+  vector <lower=-1.0, upper=1.0> [N] n_d;
+  // LSTM input gate
+  vector <lower= 0.0, upper=1.0> [N] g_i;
+  // LSTM output gate
+  vector <lower= 0.0, upper=1.0> [N] g_o;
+  // LSTM forget gate
+  vector <lower= 0.0, upper=1.0> [N] g_f;
+  // LSTM momentum for output gate
+  vector [N] v_g_o;
+  // LSTM momentum for candidate cell state
+  vector [N] v_n_d;
+  // LSTM momentum for input gate
+  vector [N] v_g_i;
+  // LSTM momentum for forget gate
+  vector [N] v_g_f;
+  //
+  /* 
+         ---- Accumulator for HMM Forward Algorithm ----
+     Used to sum log-probabilities for the HMM forward algorithm,
+	 helping to avoid numerical underflow.
+  */
+  real accumulator[2];
+  real mu;
+  matrix[N, 2] log_alpha;   // Forward log-probabilities
+  vector[2] mu_1_state_sorted;
+  vector[2] beta10_state_sorted;
+  vector[2] tau_state_sorted;
+  /*
+	    ---- Hidden Markov Model (HMM) Transition Matrix ----
+    'A' represents the transition probabilities between the two hidden states (e.g., low and high volatility regimes).
+     A[i, j] is the probability of transitioning from state 'i' to state 'j'.
+     p_remain[s] is the probability of staying in state 's'.
+  */
+  matrix[2, 2] A;           // Transition matrix
+  /*
+	   ---- HMM Log-Likelihood for Each State ----
+   log_A[t, s] stores the log of the joint probability of the observations up to time 't'
+   and being in state 's' at time 't'. Used in the forward algorithm for HMM inference. 
+  */ 
+  matrix[2, 2] log_A;  
+  /* 
+     'probability' stores the normalized posterior probabilities 
+     of being in each state at each time point.
+  */
+  vector[2] probability[N];
+  //
+  /*   
+         ---- Bidirectional GRU momentum vectors ----  
+  */
+  //  Corresponds to the update/reset gate ***(Forward)    
+  vector [N] v_g_f_gru_forward;
+  // Corresponds to the update/reset gate  ***(Forward)
+  vector [N] v_h_gru_forward;
+  //  Corresponds to the update/reset gate ***(Backward)  
+  vector [N] v_g_f_gru_backward;
+  // Corresponds to the update/reset gate  ***(Backward)  
+  vector [N] v_h_gru_backward; 
+  /*        
+                              ---- GRU States ----
+        g_f_gru: Forget/Update gate for the GRU.
+        h_gru: Hidden states of the GRU, which will be used in the mean component.
+  */
+  vector [N] g_f_gru_forward;
+  vector [N] h_gru_forward; 
+  vector [N] h_gru_forward_updated; 
+  vector [N] g_f_gru_backward;
+  vector [N] h_gru_backward;
+  vector [N] h_gru_backward_updated;
+  /*   
+                  ---- Concatenated Hidden State from Bidirectional GRU ----
+      
+	  Combines the forward and backward hidden states, often by averaging or concatenation.
+      This combined state summarizes information from both past and future contexts for each time point.
+  
+  */
+  vector [N] h_gru_concatenate;
+  /*  
+  // 
+  /*
+           
+		   ---- Sorted Regime-Specific Log-Volatility Levels ----
+
+    The original `mu_1_state` and others vectors contain regime-dependent intercepts
+    for the log-volatility innovations (n[t]). However, without constraints,
+    their labels (e.g., "low" vs. "high" volatility) are exchangeable — leading
+    to label switching across MCMC chains.
+
+    We sort 'mu_1_state' and others in ascending order to enforce an identifiability constraint,
+    ensuring that:
+       mu_1_state_sorted[1] < mu_1_state_sorted[2]
+    This helps prevent multimodal posteriors and improves mixing in the HMM component.
+
+    All downstream computations (HMM, mu_regime, forecasts) use the sorted version.
+	
+  */
+  mu_1_state_sorted = sort_asc(mu_1_state);
+  beta10_state_sorted  = sort_asc(beta10_state);
+  tau_state_sorted = sort_asc(tau_state);
+  /*          
+         ---- HMM Transition Matrix Initialization ----
+     A[1,1] = p_remain[1] means P(State 1 -> State 1)
+     A[1,2] = 1 - p_remain[1] means P(State 1 -> State 2)
+     A[2,1] = 1 - p_remain[2] means P(State 2 -> State 1)
+     A[2,2] = p_remain[2] means P(State 2 -> State 2)
+	
+  */   
+  A[1, 1] = inv_logit(p_remain[1]); A[1, 2] = 1 - inv_logit(p_remain[1]);
+  A[2, 1] = 1 - inv_logit(p_remain[2]); A[2, 2] = inv_logit(p_remain[2]);
+  for (i in 1:2) {
+    for (j in 1:2) { 
+	 log_A[i,j] = log(A[i,j]);
+	 }
+  }
+  /*
+   ===========================================================
+         Transformation Coefficients
+   ===========================================================
+  
+     Derived SV_AR(2) coefficients from reflection coefficients (rho1, rho2)
+     This is a standard transformation (e.g., related to the Durbin-Levinson algorithm)
+	 Monahan, J.F. (1984), "A Note on Enforcing Stationarity in Autoregressive-Moving Average Models")
+  */
+  phi = rho1 * (1 - rho2);
+  psi = rho2;
+  //
+  /*  
+                 ----- Gegenbauer Coefficients Calculation -----
+    Calculates the coefficients for the Gegenbauer polynomial based on d_1 and f_1.
+    These coefficients determine the long-memory properties of the FARMA process.
+    
+  */
+  for (i in 1:k) {
+   if (k == 1) {
+      u_1[i]=  cos(2.0* pi() * f1[i]);
+      g_1[i, 1] = 1.0;
+      g_1[i, 2] = 2.0 * u_1[i] * d_1;
+	  } else {
+      for (j in 3:(k+1)) {
+        g_1[i, j] = (2.0 * u_1[i] * ((j - 1) + d_1 - 1.0) * g_1[i, j - 1]
+        - ((j - 1) + 2.0 * d_1 - 2.0) * g_1[i, j - 2]) / (j - 1);
+       }
+     }
+   }
+   //
+   //
+   /*  
+         
+ 		                ---- Transformation of AR and MA Parameters ----
+                Calculate phi_mean from phi_raw (reflection coefficients)
+                This is a common algorithm (e.g., Durbin-Levinson)
+                for converting partial autocorrelations (phi_raw) to AR coefficients (phi_mean)
+				
+				Shumway, R. H., & Stoffer, D. S. (2017)
+	 
+    */
+    if (p > 0){
+	  // Temporary matrix for algorithm
+      matrix[p, p] P_AR1;
+	  matrix[p, p] P_AR2;
+	  matrix[p, p] P_AR3;
+      // Initialize the first reflection coefficient
+	  if (p == 1) {
+        P_AR1[1, 1] = phi_raw[1];
+		P_AR2[1, 1] = phi_volume1_raw[1];
+	    P_AR3[1, 1] = phi_volume2_raw[1];
+        phi_mean[1] = P_AR1[1, 1];
+		phi_volume1[1] = P_AR2[1, 1];
+		phi_volume2[1] = P_AR3[1, 1];
+      } else if (p > 1) {		
+      // Compute for higher orders
+      for (i in 2:p) {
+        P_AR1[i, i] = phi_raw[i];
+	    P_AR2[i, i] = phi_volume1_raw[i];
+	    P_AR3[i, i] = phi_volume2_raw[i];
+        for (j in 1:(i-1)) {
+          P_AR1[i, j] = P_AR1[i-1, j] - P_AR1[i, i] * P_AR1[i-1, i-j];
+		  P_AR2[i, j] = P_AR2[i-1, j] - P_AR2[i, i] * P_AR2[i-1, i-j];
+		  P_AR3[i, j] = P_AR3[i-1, j] - P_AR3[i, i] * P_AR3[i-1, i-j];
+        }
+        for (j in 1:i) {
+          phi_mean[j] = P_AR1[i, j];
+		  phi_volume1[j] = P_AR2[i, j];
+		  phi_volume2[j] = P_AR3[i, j];
+          }
+        }
+      }
+	}
+    /* 
+          Calculate theta_mean from theta_raw (reflection coefficients for MA)
+          The process is analogous to AR coefficients for invertibility
+    */  
+    if (q > 0) {
+	  // Temporary matrix for algorithm
+      matrix[q, q] Q_MA1; 
+      matrix[q, q] Q_MA2;
+	  matrix[q, q] Q_MA3;
+	  if (q == 1) {
+        Q_MA1[1, 1] = theta_raw[1];
+		Q_MA2[1, 1] = theta_volume1_raw[1];
+		Q_MA3[1, 1] = theta_volume2_raw[1];
+        theta_mean[1] = Q_MA1[1, 1];
+		theta_volume1[1] = Q_MA2[1, 1];
+	    theta_volume2[1] = Q_MA3[1, 1];
+	  } else if (q > 1) {
+      for (i in 2:q) {
+        Q_MA1[i, i]  = theta_raw[i];
+		Q_MA2[i, i] = theta_volume1_raw[i];
+		Q_MA3[i, i] = theta_volume2_raw[i];
+        for (j in 1:(i-1)) {
+          Q_MA1[i, j] = Q_MA1[i-1, j] - Q_MA1[i, i] * Q_MA1[i-1, i-j];
+		  Q_MA2[i, j] = Q_MA2[i-1, j] - Q_MA2[i, i] * Q_MA2[i-1, i-j];
+		  Q_MA3[i, j] = Q_MA3[i-1, j] - Q_MA3[i, i] * Q_MA3[i-1, i-j];
+        }
+      for (j in 1:i) {
+        theta_mean[j] = Q_MA1[i, j];
+	    theta_volume1[j] = Q_MA2[i, j];
+	    theta_volume2[j] = Q_MA3[i, j];
+        }
+       }
+     }
+   }
+   //
+   /*  
+                 ----- FARIMA Coefficients Calculation -----
+    Calculates the coefficients for the FARIMA-SV polynomial based on d_low and d_high,
+    determining also the long-memory properties of the SV process for log volume.
+    
+   */
+   psi_volume1[1] = 1;
+   psi_volume2[1] = 1;
+   for (j in 2:M) {
+      psi_volume1[j] = psi_volume1[j - 1] * ((j - 1 - d_high) / (j - 1));
+	  psi_volume2[j] = psi_volume2[j - 1] * ((j - 1 - d_low) / (j - 1));
+   }
+   // Initial log Innovation "h_volume" for log volume 
+   /*  ---- Conditional mean for burn-in M lags for ARFIMA-SV ---- */
+   mu_volume_high[1] = mu_volume1;
+   mu_volume_low[1] = mu_volume2;   
+   /*  ---- Conditional mean  for burn-in M lags for ARFIMA-SV ---- */
+   for (t in 2:M){
+     mu_volume_high[t] =  mu_volume1 + phi_volume1_warmup * (h_volume_high[t - 1]-mu_volume1);
+     mu_volume_low[t]  =  mu_volume2 + phi_volume2_warmup * (h_volume_low[t - 1]-mu_volume2); 
+   }
+   /*  ---- Conditional mean for M lags in SV-ARFIMA itself ---- */
+   for (t in (M+1):N) {
+     mu_volume_high[t] = mu_volume1;
+	 mu_volume_low[t]  = mu_volume2;
+	 // Short-term volatility mean evolution
+     for (l in 1:M){
+          mu_volume_high[t] += psi_volume1[l] * (h_volume_high[t - l]-mu_volume1);  // Frac diff terms
+	 }
+	 if(p > 0) for (i in 1:min(t-1,p)){
+          mu_volume_high[t] += phi_volume1[i] * (h_volume_high[t - i]-mu_volume1);       // AR terms
+	 }
+	 if(q > 0) for(j in 1:min(t-1,q)){ 
+          mu_volume_high[t] += theta_volume1[j] * (h_volume_high[t - j]-mu_volume_high[t-j]);	 // MA terms (Residuals Innovations) 
+     }
+	 // Long-term volatility  mean evolution
+     for (l in 1:M){	 
+          mu_volume_low[t]  += psi_volume2[l] * (h_volume_low[t - l]- mu_volume2);  // Frac diff terms
+	 }
+	 if(p > 0) for (i in 1:min(t-1,p)){
+          mu_volume_low[t] += phi_volume2[i]   * (h_volume_low[t - i]-mu_volume2);       // AR terms
+     }
+	 if(q > 0) for(j in 1:min(t-1,q)){	 
+	      mu_volume_low[t] += theta_volume2[j] * (h_volume_low[t - j]-mu_volume_low[t-j]);	     // MA terms 
+     }
+  }
+  /*             
+               ---- Linear Mapping Transformation ----
+        Applies this transformation for leverage coefficient "rho"
+  */
+  rho = 2*(rho_raw)-1;   
+  //
+  /*  
+                   ---- Initial LSTM momentum, hidden and cell states values for time t=1 ----
+	   
+	The first update becomes just the  signal term, which is intuitive and avoids introducing an arbitrary offset. 
+	It reduces risk of artificially large gate activations at the start.
+	
+  */
+  v_g_o[1] = 0.0;
+  v_n_d[1] = 0.0;
+  v_g_i[1] = 0.0;
+  v_g_f[1] = 0.0; 
+  //  
+  /*  
+       ---- LSTM momentum update for t=1 (using scalar parameters) ----
+  */  
+  v_g_o[1] = (momentum * v_g_o[1] + epsilon*thetv_o_scalar*n[1]);
+  v_n_d[1] = (momentum * v_n_d[1] + epsilon*thnv_d_scalar*n[1]);
+  v_g_i[1] = (momentum * v_g_i[1] + epsilon*thnv_i_scalar*n[1]);
+  v_g_f[1] = (momentum * v_g_f[1] + epsilon*thnv_f_scalar*n[1]);
+  /*    
+       ---- LSTM gate calculations for t=1 ----
+  */  
+  g_o[1]  = inv_logit(v_g_o[1] + thnw_o_scalar*h_1 + thnb_o_scalar);
+  n_d[1]  = tanh(v_n_d[1]+ thnw_d_scalar*h_1 + thnb_d_scalar);
+  g_i[1]  = inv_logit(v_g_i[1] + thnw_i_scalar*h_1 + thnb_i_scalar);
+  g_f[1]  = inv_logit(v_g_f[1] + thnw_f_scalar*h_1+ thnb_f_scalar);  
+  /*   
+       ---- LSTM cell and hidden state for t=1 ----
+  */
+  C[1] =   g_i[1] * n_d[1]  + g_f[1] *C_1;
+  h[1] =   g_o[1] * tanh(C[1]); 
+  // Expected regime-specific intercept for n[1]
+  /*
+  
+       Here, "smoothing" means the model doesn't commit to a single state at any given moment,
+       but instead maintains a probabilistic blend of all possible states. 
+       This allows for a more flexible, stable, and realistic representation of how market conditions evolve.
+   
+  */ 
+  //  Initialization at t=1 
+  mu_regime[1] = dot_product(mu_1_state, rep_vector(0.5, 2));
+  beta10_regime[1] = dot_product(beta10_state, rep_vector(0.5, 2));
+  tau_regime[1] = dot_product(tau_state_sorted, rep_vector(0.5, 2));
+  /*   
+      Here, the innovation is the log-volatility eta zero
+  */
+  z[1] = n[1] +  monday_z* date[1,1] + tuesday_z*date[1,2] + wednesday_z*date[1,3]
+  + thursday_z*date[1,4] + friday_z*date[1,5];
+  //
+  /*  
+         ---- HMM Forward Algorithm Initialization for t=1 ----
+     Calculates the initial log-probability of being in each state, given the first observation.
+     Assumes equal initial state probabilities (0.5).
+  */
+  for (j in 1:2) {
+    mu = mu_1_state_sorted[j];
+	mu += monday_z* date[1,1] + tuesday_z*date[1,2] + wednesday_z*date[1,3]
+         + thursday_z*date[1,4] + friday_z*date[1,5]; 
+    log_alpha[1, j] = log(0.5) + normal_lpdf(z[1] | mu, tau_state_sorted[j]);
+  }
+  // Convert log-probs to regime probabilities using softmax
+  probability[1] = softmax(to_vector(log_alpha[1]));    
+  /*   
+       ---- LSTM momentum update for t=2 ----
+  */  
+  v_g_o[2] = (momentum * v_g_o[1] + epsilon*thetv_o_scalar*n[1]);
+  v_n_d[2] = (momentum * v_n_d[1] + epsilon*thnv_d_scalar*n[1]);
+  v_g_i[2] = (momentum * v_g_i[1] + epsilon*thnv_i_scalar*n[1]);
+  v_g_f[2] = (momentum * v_g_f[1] + epsilon*thnv_f_scalar*n[1]); 
+  /*   
+       ---- LSTM gate calculations for t=2 ----
+  */
+  g_o[2]  = inv_logit(v_g_o[2] + thnw_o_scalar*h[1] + thnb_o_scalar);
+  n_d[2]  = tanh(v_n_d[2] + thnw_d_scalar*h[1] + thnb_d_scalar);
+  g_i[2]  = inv_logit(v_g_i[2] + thnw_i_scalar*h[1] + thnb_i_scalar);
+  g_f[2]  = inv_logit(v_g_f[2] + thnw_f_scalar*h[1] + thnb_f_scalar); 
+  /*   
+       ---- LSTM cell and hidden state for t=2 ----
+  */	   
+  C[2] =   g_i[2] *n_d[2]  + g_f[2] *C[1];
+  h[2] =   g_o[2] * tanh(C[2]); 
+  /*   
+       ---- AR 1 component at time = 2, with regime shift on eta[2] ----
+  */
+  // ---- Compute expected regime (Bayesian filtered) ----
+  mu_regime[2] = dot_product(mu_1_state_sorted, probability[1]);
+  beta10_regime[2] = dot_product(beta10_state_sorted, probability[1]);
+  tau_regime[2] = dot_product(tau_state_sorted, probability[1]);
+  // ---- Generate log-volatility z[2] with innovation n[2]  ----
+  z[2] = n[2] + phi*(z[1]) + monday_z* date[2,1]
+  + tuesday_z*date[2,2] + wednesday_z*date[2,3] + thursday_z*date[2,4] + friday_z*date[2,5]
+  +kpi*signals[1];
+  //  
+  /*   
+  
+         ---- HMM Forward Algorithm  for t=2 ----
+		 
+      At time t = 2, the volatility innovation `n[2]` is drawn from a
+      regime-weighted expectation (mu_regime[2] and others in volatility innovations eq)
+	  based on the filtered state probabilities at t = 1.
+
+      The forward algorithm then computes the regime-specific likelihood
+      of the observed volatility state z[2] given each possible transition
+      from prior states (i -> j), using the regime-specific mean.
+
+      This maintains consistency with the Bayesian HMM structure and
+      enables accurate posterior regime probabilities.
+	  
+  */
+  for (j in 1:2) { // current state t=2
+   for (i in 1:2) { // previous state t=1
+     mu = mu_1_state_sorted[j] + beta10_state_sorted[j] * h[1]
+             + rho * tau_state_sorted[j] * exp(-0.5 * z[1]) * y[1];
+     mu += phi * z[1];	//  mean for z[2]
+	 mu += monday_z* date[2,1] + tuesday_z*date[2,2] + wednesday_z*date[2,3] + thursday_z*date[2,4] + friday_z*date[2,5];
+	 mu += kpi*signals[1];
+     accumulator[i] = log_alpha[1, i] + log_A[i, j] + normal_lpdf(z[2] | mu, tau_state_sorted[j]);	 	              
+   }
+   log_alpha[2, j] = log_sum_exp(accumulator);
+  }
+  probability[2] = softmax(to_vector(log_alpha[2]));
+  for (t in 3:N){  
+	/*   
+	     ---- LSTM momentum update for t ---- 
+    */		 
+    v_g_o[t] = (momentum * v_g_o[t-1] + epsilon*thetv_o_scalar*n[t-1]);
+    v_n_d[t] = (momentum * v_n_d[t-1] + epsilon*thnv_d_scalar*n[t-1]);
+    v_g_i[t] = (momentum * v_g_i[t-1] + epsilon*thnv_i_scalar*n[t-1]);
+    v_g_f[t] = (momentum * v_g_f[t-1] + epsilon*thnv_f_scalar*n[t-1]);
+	/*  
+         ---- LSTM gate calculations for t ----
+	*/
+    g_o[t]  = inv_logit(v_g_o[t] + thnw_o_scalar*h[t-1] + thnb_o_scalar);
+	n_d[t]  = tanh(v_n_d[t] + thnw_d_scalar*h[t-1] + thnb_d_scalar);
+    g_i[t]  = inv_logit(v_g_i[t] + thnw_i_scalar*h[t-1] + thnb_i_scalar);
+	g_f[t]  = inv_logit(v_g_f[t] + thnw_f_scalar*h[t-1] + thnb_f_scalar);  
+	/*
+	     ---- LSTM cell and hidden state for t ----
+	*/		 
+    C[t] =   g_i[t] *n_d[t]  + g_f[t] *C[t-1];
+    h[t] =   g_o[t] * tanh(C[t]); 
+    /*   ---- Markov Switching terms for t ----  */
+	mu_regime[t] = dot_product(mu_1_state_sorted, probability[t-1]);
+	beta10_regime[t] = dot_product(beta10_state_sorted, probability[t-1]);
+	tau_regime[t] = dot_product(tau_state_sorted, probability[t-1]);
+	// AR(2) evolution of latent log-volatility with innovation n[t] 
+	z[t] = n[t] + phi*(z[t-1])+ psi*(z[t-2]) + monday_z* date[t,1]
+	+ tuesday_z*date[t,2] + wednesday_z*date[t,3] + thursday_z*date[t,4] + friday_z*date[t,5]
+	+kpi*signals[t-1];
+	//
+    for (j in 1:2) { // Current state
+      for (i in 1:2) { // Previous state
+        mu = mu_1_state_sorted[j] +  beta10_state_sorted[j] * h[t - 1]
+             + rho * tau_state_sorted[j] * exp(-0.5 * z[t - 1]) * y[t - 1];
+		mu += phi * z[t - 1] + psi * z[t - 2];
+        mu += monday_z* date[t,1] + tuesday_z*date[t,2] + wednesday_z*date[t,3] + thursday_z*date[t,4] + friday_z*date[t,5];
+        mu += kpi*signals[t-1];		
+        accumulator[i] = log_alpha[t - 1, i]  // Log-probability from previous observation and state i
+		                 + log_A[i, j]  // Log-transition probability from i to j
+						 // Log-likelihood of volatility given previous state i's volatility
+						 + normal_lpdf(z[t] | mu, tau_state_sorted[j]);
+	    }
+      log_alpha[t, j] = log_sum_exp(accumulator); // Sums log-probabilities for all paths leading to state j
+ 	  } 
+	  probability[t] = softmax(to_vector(log_alpha[t])); // Normalizes to get posterior probabilities for current time 't'.
+    }
+    for (i in 1:N){  
+      fourier_terms_1 = 0.0; // Initialize accumulator
+      if (k1 > 0) {
+      for (j in 1:k1) {
+         fourier_terms_1 += alfa1[j] * sin((2*pi()*f1[j]) *(i)) + beta1[j] * cos((2*pi()*f1[j]) * (i));
+         }
+      }
+      periodic_component_sum[i] = fourier_terms_1; // Assign after summing
+   }
+   /*
+        ---- Conditional mean. Initialize Bidirectional GRU States and Momentum for t=1 ----
+                Sets initial hidden and cell states to zero.
+           Sets initial forward and backward momentum  to zero.
+   */ 
+   // Forward terms   
+   v_g_f_gru_forward[1] = 0.0;
+   v_h_gru_forward[1] =   0.0;
+   v_g_f_gru_forward[1] =  (momentum * v_g_f_gru_forward[1] + epsilon*thnw_f_gru_scalar_forward*h_0_forward);
+   g_f_gru_forward[1]   =  inv_logit(v_g_f_gru_forward[1] + thnv_f_gru_scalar_forward*v[1] +  thnb_f_gru_scalar_forward);
+   v_h_gru_forward[1]   =  (momentum *v_h_gru_forward[1] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward[1] + h_0_forward));
+   h_gru_forward[1]     =   tanh(v_h_gru_forward[1] + theta_h_gru_scalar_forward*v[1]  + thnb_h_gru_scalar_forward);
+   h_gru_forward_updated[1] = (1- g_f_gru_forward[1])*h_0_forward +  g_f_gru_forward[1] *h_gru_forward[1];
+   // Backward terms 
+   v_g_f_gru_backward[1] = 0.0;
+   v_h_gru_backward[1] =   0.0;
+   v_g_f_gru_backward[1] =  (momentum * v_g_f_gru_backward[1] + epsilon*thnw_f_gru_scalar_backward*h_0_backward);
+   g_f_gru_backward[1]   =  inv_logit(v_g_f_gru_backward[1] + thnv_f_gru_scalar_backward*v[N] +  thnb_f_gru_scalar_backward);
+   v_h_gru_backward[1]   =  (momentum *v_h_gru_backward[1] + epsilon*thnw_h_gru_scalar_backward*(g_f_gru_backward[1] + h_0_backward));
+   h_gru_backward[1]     =  tanh(v_h_gru_backward[1] + theta_h_gru_scalar_backward*v[N]  + thnb_h_gru_scalar_backward);	
+   h_gru_backward_updated[1] = (1- g_f_gru_backward[1])*h_0_backward +  g_f_gru_backward[1] *h_gru_backward[1];      
+   /*
+        GRU update rule: (1 - update_gate) * previous_hidden_state + update_gate * candidate_hidden_state
+        Here, "g_f_gru_forward" and "g_f_gru_backward" are acting as the update gate.
+   */
+   //
+   /*               
+                     ---- Concatenate Bidirectional GRU Hidden States ----
+      The first element uses h_gru_backward[N] because that's the "first" in the backward pass.
+   */
+   h_gru_concatenate[1] = gru_hidden_state_scalar*((h_gru_forward_updated[1] + h_gru_backward_updated[1])/2);
+   //
+   /*
+	                    ---- Modeling volume mean as a function of log-volatility ----
+		
+		 This formulation links log-volume to both the level and the curvature of volatility,
+         using the transformed variable σ_t = exp(z[t]/2), which corresponds to the standard deviation
+         of returns in a stochastic volatility model.
+
+         The volume model includes:
+		 
+           * A linear term in σ_t (m1 * exp(z[t]/2)), capturing proportional increases in volume with volatility.
+		  
+           * A quadratic term (m2 * square(exp(z[t]/2))), capturing convex responses where volume increases
+            more rapidly at higher levels of volatility.
+			 
+	       * Seasonal Fourier terms to account for periodic volume fluctuations (e.g: monthly cycles).
+
+         This structure is commonly used in financial econometrics, building on evidence that
+         trading volume responds nonlinearly to changes in volatility (e.g., Tauchen & Pitts, 1983; Andersen et al., 1996).
+		 
+   */
+   //  Conditional mean (Gegenbauer-FARMAX) Process for t=1
+   mean_volume[1] = m0;
+   mean_volume[1] += m1*exp(z[1]/2) + m2*square(exp(z[1]/2)) + m3*z[1];
+   mean_volume[1] += periodic_component_sum[1];	                          // Fourier terms
+   mean_volume[1] += jump[1];                                             // Jumps on the mean
+   mean_volume[1] += phi_mean[1]*(h_gru_concatenate[1]);                  // AR 1 at time t=1
+   mean_volume[1] = swish(mean_volume[1] , beta_swish);   
+   residuals[1] = v[1] - mean_volume[1];
+   for (t in 2:N){
+    /*
+	                ---- Forward and Backward MomentumGRU Update within the loop ----
+          Computes momentum, gate, and hidden state for GRU at each time step,
+          using the previous hidden state (h_gru_forward[t-1]) and previous returns obs (y[t-1]).
+	
+	*/
+	v_g_f_gru_forward[t] = (momentum * v_g_f_gru_forward[t-1] + epsilon*thnw_f_gru_scalar_forward*h_gru_forward[t-1]);
+	g_f_gru_forward[t] = inv_logit(v_g_f_gru_forward[t] + thnv_f_gru_scalar_forward*v[t-1] + thnb_f_gru_scalar_forward);
+	v_h_gru_forward[t] =  (momentum *v_h_gru_forward[t-1] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward[t] + h_gru_forward[t-1]));
+	h_gru_forward[t] =  tanh(v_h_gru_forward[t] + theta_h_gru_scalar_forward*v[t-1] + thnb_h_gru_scalar_forward);
+	h_gru_forward_updated[t] = (1- g_f_gru_forward[t])*h_gru_forward[t-1] +  g_f_gru_forward[t] *h_gru_forward[t]; 
+	/*            
+                	---- backward MomentumGRU Update within the loop ----
+          Computes momentum, gate, and hidden state back GRU at each time step,
+          using the previous hidden state (h_gru_backward[t-1]) and previous inverted returns obs (y[N-t]).
+    
+	*/
+	v_g_f_gru_backward[t] = (momentum * v_g_f_gru_backward[t-1] + epsilon*thnw_f_gru_scalar_backward*h_gru_backward[t-1]);
+    g_f_gru_backward[t] = inv_logit(v_g_f_gru_backward[t] + thnv_f_gru_scalar_backward*v[max(N-t+1,1)] + thnb_f_gru_scalar_backward);
+    v_h_gru_backward[t] =  (momentum *v_h_gru_backward[t-1] + epsilon*thnw_h_gru_scalar_backward*(g_f_gru_backward[t] + h_gru_backward[t-1]));
+    h_gru_backward[t] =  tanh(v_h_gru_backward[t] + theta_h_gru_scalar_backward*v[max(N-t+1,1)] + thnb_h_gru_scalar_backward);
+    h_gru_backward_updated[t] = (1- g_f_gru_backward[t])*h_gru_backward[t-1] +  g_f_gru_backward[t] *h_gru_backward[t];       	
+    /*
+                   --- Concatenate Bidirectional GRU Hidden States (for t > 1) ---
+                  Combines the forward hidden state  with the backward hidden state at time 't'
+     	  
+    */ 
+    h_gru_concatenate[t] =  gru_hidden_state_scalar*((h_gru_forward_updated[t] + h_gru_backward_updated[t])/2);   
+    /*
+		 Conditional mean (Gegenbauer-FARMAX) Process for t=2]
+	*/  
+    mean_volume[t] = m0;
+    mean_volume[t] += m1*exp(z[t]/2) + m2*square(exp(z[t]/2)) + m3*z[t];
+    mean_volume[t] += periodic_component_sum[t];
+	mean_volume[t] += jump[t];
+	mean_volume[t] += di*Future_DI[t-1];  	
+    //	
+    if (k > 0)  for (i in 1:min(1,k)) { // If Gegenbauer (long memory) component is specified
+     for (m in 1:min(1, k)) {
+         mean_volume[t] += g_1[i, m + 1] * v[t - m]; // Gegenbauer terms on observed terms.
+         }
+    }
+    if(p > 0) for (i in 1:min(t-1,p)){
+	     mean_volume[t] += phi_mean[i]*(h_gru_concatenate[t-i]);
+	}
+    if(q > 0) for(j in 1:min(t-1,q)){ // If MA component is specified
+         mean_volume[t] += theta_mean[j] * residuals[t-j];
+    }
+	mean_volume[t] = swish(mean_volume[t] , beta_swish); 
+	residuals[t] = v[t] - mean_volume[t];
+   }
+}
+
+model { 
+   /*
+   
+           "According to the trade-o between risk and reward principle, the more risk taken,
+           the greater the potential reward (Lundblad, 2007). Therefore, mean returns on stocks
+           should be at least not less than the risk-free rate."  (WANG, 2016, p.12).
+           
+   */   
+   alpha ~ normal(0.00, 0.05) T[-1,+1]; 
+   /*   
+             ---- Scaling factor for bidirectional GRU hidden states. ----
+   
+           Constrained [1,2] to prevent runaway amplification;
+           prior shrinks toward 1.0 so GRU acts as a mild adjustment
+           unless data supports stronger influence.
+   
+   */
+   gru_hidden_state_scalar  ~ normal(1,0.25) T[1,2]; 
+   //  Beta Coefficient for swish 
+   beta_swish ~ normal(0.00, 0.10) T[0,];
+   /*  ---- Jump Components on the mean 
+       ( Soft Spike-and-slab “continuous”)   ---- */
+   //
+   /* ---- Informed priors according to Extreme Value Analysis (EVA) ----
+      sigma_spike ≈ 0.79, sigma_slab ≈ 1.81, p_jump ≈ 0.049
+   */
+   sigma_spike ~ normal(0.79, 0.2) T[0,];  
+   sigma_slab  ~ normal(1.81, 0.5) T[0,];   
+   //
+   /*    
+       Jump probability "pi_z" Beta with mean  ~ 0.049
+   */
+   pi_z ~ beta(1, 19);
+   /*  ---- zero-mean normal marginalized spike-and-slab prior 
+            with a variance that depends on pi_z       ---- */
+   for (t in 1:N){
+      target += log_mix(pi_z,
+                      normal_lpdf(jump[t] | 0, sigma_slab),
+                      normal_lpdf(jump[t] | 0, sigma_spike));
+   }
+   /*  ---- Prior for fractional differencing on Gegenbauer-FARMAX  ---- */
+   d_1 ~ beta(2.00, 4);
+   /*  ---- Prior for fractional differencing on FARIMA-SV  ---- */
+   d_high ~ beta(2, 4);
+   d_low ~ beta(2, 4);
+   //
+   /*  ---- Priors for regimes on Innovations "Eta" ---- */
+   mu_1_state[1] ~  normal(-6.0, 0.6); // Low-volatility mean regime
+   /*  
+         low-vol regime around sd ≈ 0.03–0.06 (very calm days)
+         Implied median sd = exp(-6/2) = exp(-3) ≈ 0.050
+         95% prior sd-range ≈ 0.018 -> 0.14
+   */
+   mu_1_state[2] ~  normal(-3.8, 0.8); // High-volatility mean regime
+   /*
+         Implied median sd = exp(-3.8/2) = exp(-1.9) ≈ 0.149
+         95% prior sd-range ≈ 0.055 -> 0.40
+   */ 
+   //   
+   /*  ---- HMM Transition Probabilities ----     */
+   p_remain ~ beta(20, 1.0);  // High persistence of remaining in a state     
+   /* 
+           ---- volatility/momentum should evolve smoothly ----
+      Encourages the model to learn slow-moving, stable momentum patterns in volatility, 
+      which is plausible for financial time series where latent dynamics often evolve gradually.
+   */
+   //    Centered around 0.9, but openned to be anywhere between 0.8 and 1.0. 
+   //    Helping to get persistent temporal dependencies
+   momentum ~ normal(0.9, 0.1) T[0,1];  
+   epsilon ~ beta(2.0, 2.0);     // "uniform-ish" over [0,1]
+   //
+   /*  ---- Log Returns log volatility AR-2 Coefficients Priors ---- */
+   rho1 ~  normal(0.90, 0.10) T[-1,1] ; //  High persistence
+   rho2 ~  normal(0.00, 0.20) T[-1,1];  // Allows curvature but avoids large oscillations
+   //
+   //
+   /*                   ---- Priors for daily effects: ----
+          Hierarchical priors allow the daily effects  to share strength,
+	      improving estimation particularly if some weekdays have less data or high variability.
+   */   
+   mean_monday_z ~ normal(0.0,0.20);
+   mean_tuesday_z ~ normal(0.0,0.20);
+   mean_wednesday_z ~ normal(0.0,0.20);
+   mean_thursday_z ~ normal(0.0,0.20);
+   mean_friday_z ~ normal(0.0,0.20);
+   /* 
+                 ---- Standard deviations for daily effect priors. ---- 
+        It lets the model occasionally explore larger values if the data demand it,
+        allowing robust shrinkage but with some tolerance for big effects 		
+   */
+   sigma_monday_z ~ student_t(3, 0, 0.20) T[0,]; 
+   sigma_tuesday_z ~ student_t(3, 0, 0.20) T[0,];
+   sigma_wednesday_z ~ student_t(3, 0, 0.20) T[0,];
+   sigma_thursday_z ~student_t(3, 0, 0.20) T[0,];
+   sigma_friday_z ~ student_t(3, 0, 0.20) T[0,];
+   /*  
+       * Individual daily  effects drawn from their respective hierarchical priors.
+   */
+   monday_z ~ normal(mean_monday_z ,sigma_monday_z);
+   tuesday_z ~ normal(mean_tuesday_z ,sigma_tuesday_z);
+   wednesday_z ~ normal(mean_wednesday_z ,sigma_wednesday_z);
+   thursday_z ~ normal(mean_thursday_z ,sigma_thursday_z);   
+   friday_z ~ normal(mean_friday_z,sigma_friday_z);
+   //
+   /*  
+                ---- Priors for KPI effects: ----
+       Hierarchical priors allow the  kpi effects  to share strength,
+	   improving estimation.(Assumes symetry between negative (Sell) 
+	   and positive (Buy) KPI signals )
+   */
+   //
+   /*  
+       * Prior for KPI signals (log-returns volatility)
+   */
+   mean_kpi ~ normal(0.0,0.20);
+   /*   
+       * Standard deviations for kpi effect priors.
+	     Same thing as above , like in the day of the week.
+   */
+   sigma_kpi ~ student_t(3, 0, 0.20) T[0,];
+   /*  The same hierarchical approach with Fundamental Analysis KPI. */
+   kpi ~ normal(mean_kpi,sigma_kpi);
+   //
+   /*  
+       * Prior for DI signals (volume)
+   */
+   mean_di ~ normal(0.0,0.20);
+   /*   
+       * Standard deviations for di effect priors.
+   */
+   sigma_di ~ student_t(3, 0, 0.20) T[0,];
+   /*  The same hierarchical thing here too!  */
+   di ~ normal(mean_di,sigma_di);
+   //
+   /* --- Fourier shrinkage, helping avoid overfitting wavy noise. --- */
+   if (k1 > 0){
+     for (j in 1:k1) { 
+       alfa1[j] ~ double_exponential(0.00, 0.25 / k1); // Prior for sine parameters
+       beta1[j] ~ double_exponential(0.00, 0.25 / k1); // Prior for cosine parameters
+     }
+   }
+   /*  ---- Priors for volume model coefficients. ----    */
+   // Prior for volume intercept
+   m0 ~ normal(0.0, 5.0) T[0,];   
+   /*
+             ---- Linear coefficient linking volatility (`σ_t = exp(z[t]/2)`) to log-volume  ---- 
+      Enforces a monotonic positive relationship — higher volatility tends to increase trading activity.
+      This captures the primary volatility–volume link observed in empirical finance (e.g., Tauchen & Pitts, 1983).
+   */
+   m1 ~ normal(0.0, 2.0) T[0,]; 
+   /*
+            ---- Quadratic coefficient capturing  curvature (can be concave or convex) in the volatility–volume relationship. ---- 
+      Allows volume to increase faster as volatility rises, modeling nonlinear amplification during turbulent periods
+      (e.g., Andersen et al., 1996).
+   */
+   m2 ~ normal(0.0, 2.0);
+   /* 
+            ---- Coefficient linking log-volatility (`z[t]`) to log-volume. ---- 
+      Introduces scale sensitivity by allowing volume to respond to the level of log-volatility directly, 
+      complementing the nonlinear effects of raw volatility.
+      This improves flexibility in low-volatility regimes and reflects persistent informational dynamics.
+   */
+   m3 ~ normal(0.0, 2.0); 
+   //  
+   /*   
+        * Priors for the coefficients of `n` (log-volatility innovation mean). 
+   */		
+   beta10_state[1] ~ normal(-0.3, 0.2);   // Low log-volatility LSTM coefficient.
+   beta10_state[2] ~ normal(0.5, 0.2);    // High log-volatility LSTM coefficient.
+   // Positive volatility-volume link, avoids near-zero issues
+   /*   ---- Prior for `tau` (volatility of log-volatility) ----
+   
+      Lower ,  long-term (low-frequency),  volatility component.
+          Encourages smooth transitions and persistent volatility structure.
+   */
+   tau_state[1] ~  normal(0.00, 0.25) T[0,];
+   /*
+        Higher , short-term (high-frequency) ,  log-innovation variance regime.
+          Allows for explosive moves in volatility (e.g., crisis, shock).
+  
+   */
+   tau_state[2] ~  normal(0.00, 0.40) T[0,];  
+
+   //   
+   /* Prior for `rho` (correlation between returns and volatility innovations).  */
+   rho_raw ~  beta(2.0, 2.0);  //  Also "uniform-ish" over [0,1] 
+   /*  
+                          ---- log-volatility for log-returns innovation ----
+						  
+        Cross-Equation Non-Linearity (log Returns and Log-Volatility Conditioning Innovations)
+                                  (WANG, 2016, p. 67)
+								  
+	    Conditional standard deviation of n[t] given y[t-1],n[t] | y[t-1],
+        derived from bivariate normal with correlation rho.
+        Ensures residual variance accounts for leverage effect.
+   */
+   //   
+   n[1] ~ normal(mu_regime[1] , tau_regime[1]);	
+   //
+   /* 
+      By using z[t-1] and y[t-1] in the mean of n[t] is logically consistent: 
+      n[t] depends on previous market activity (y[t-1]) and the accumulated "momentum" 
+      from past volatility shocks (z[t-1]).
+	  
+	  "Stochastic volatility model with leverage" (Model 5, likely based on Wang, 2016)
+   */	  
+   for (t in 2:N){
+     n[t] ~ normal(mu_regime[t] + beta10_regime[t]*h[t-1]+ rho*tau_regime[t]*exp(-0.5*z[t-1])*y[t-1], tau_regime[t]*sqrt(1-
+                       square(rho)));
+   }
+   // 
+   /*  
+            ---- Priors for  MomentumLSTM Scalar Parameters ----
+      These are given standard normal priors, typical for neural network weights/biases. 
+   */
+   // ===========================================================
+   // LSTM Scalar Priors for Stochastic Volatility 
+   // =========================================================== 
+   C_1 ~ normal(0.0,2.00);            // Initial cell state
+   h_1 ~ normal(0.0,2.00);            // Initial hidden state   
+   thetv_o_scalar ~ normal(0.0,2.0);  // Output gate momentum vector
+   thnw_o_scalar  ~ normal(0.0,2.0);  // Output gate weight
+   thnb_o_scalar  ~ normal(0.0,2.0);  // Output gate bias
+   thnv_d_scalar  ~ normal(0.0,2.0);  // Cell state candidate momentum vector
+   thnw_d_scalar  ~ normal(0.0,2.0);  // Cell candidate weight
+   thnb_d_scalar  ~ normal(0.0,2.0);  // Cell candidate bias
+   thnv_i_scalar  ~ normal(0.0,2.0);  // Input gate momentum
+   thnw_i_scalar  ~ normal(0.0,2.0);  // Input gate weight
+   thnb_i_scalar  ~ normal(0.0,2.0);  // Input gate bias
+   thnv_f_scalar  ~ normal(0.0,2.0);  // Forget gate momentum
+   thnw_f_scalar  ~ normal(0.0,2.0); 
+   /*  Forget Gate Bias weight 
+          encourages memory retention (sigmoid(1) ≈ 0.73)
+   */
+   thnb_f_scalar  ~ normal(1.0,0.5);
+   /*  
+                  ---- Priors for MomentumGRU  Scalar Parameters ----
+     These are given standard normal priors, typical for neural network weights/biases. 
+   */
+   // ===========================================================
+   // Bidirectional Momentum-GRU Priors (Forward)
+   // ===========================================================  
+   h_0_forward ~ normal(0.0,2.00);                 // Initial hidden state prior 
+   theta_h_gru_scalar_forward ~ normal(0.0,2.0);   // GRU hidden state transformation
+   thnv_f_gru_scalar_forward ~  normal(0.0,2.0);   // Momentum vector (v) forward
+   thnw_f_gru_scalar_forward ~  normal(0.0,2.0);   // Weighting for forward GRU update
+   /*  
+       ---- Bias term for forward GRU update ----
+     encourages memory retention (sigmoid(1) ≈ 0.73)
+   */
+   thnb_f_gru_scalar_forward ~  normal(1.0,0.5);   // Bias term for forward GRU update  
+   thnw_h_gru_scalar_forward ~  normal(0.0,2.0);   // Weighting for hidden (h) update
+   thnb_h_gru_scalar_forward ~  normal(0.0,2.0);   // Bias term for hidden (h) update
+   // ===========================================================
+   // Bidirectional Momentum-GRU Priors (Backward)
+   // ===========================================================  
+   h_0_backward ~ normal(0.0,2.00);  
+   theta_h_gru_scalar_backward ~ normal(0.0,2.0);  // Same here for backward terms!
+   thnv_f_gru_scalar_backward  ~ normal(0.0,2.0); 
+   thnw_f_gru_scalar_backward  ~ normal(0.0,2.0); 
+   thnb_f_gru_scalar_backward  ~ normal(1.0,0.5);  
+   thnw_h_gru_scalar_backward  ~ normal(0.0,2.0); 
+   thnb_h_gru_scalar_backward  ~ normal(0.0,2.0);
+   /*   
+                 ---- FARMA AR and MA Parameters ----
+       Priors for the raw parameters (reflection coefficients)
+       Often a symmetric prior  for each phi_raw[i] and theta_raw[i]
+   */
+   if (p > 0) {
+    for (i in 1:p) {
+      phi_raw[i] ~ normal(0,2)T[-1,1];	
+	  // Log volume AR-1 Post Warm-up Coefficients Prior
+      phi_volume1_raw[i]  ~ normal(0,2)T[-1,1];      
+      phi_volume2_raw[i]  ~ normal(0,2)T[-1,1];     
+     }
+   }
+   if (q > 0) {
+     for (i in 1:q) {
+       theta_raw[i] ~ normal(0,2)T[-1,1];
+       // Log volume MA-1 Post Warm-up Coefficients Prior 
+       theta_volume1_raw[i] ~ normal(0,2)T[-1,1];    
+       theta_volume2_raw[i] ~ normal(0,2)T[-1,1];	   
+     }
+   }   
+   //   
+   /*  
+                          ---- log-volatility for log-volume  innovation ----
+						  
+						  
+    *  Two-Component Stochastic Volatility Model (SV–SV)
+    
+
+    *  This model decomposes total volatility into two latent AR(1) components:
+
+        - h1[t]: Short-term, high-frequency volatility dynamics
+                 Captures rapid bursts and clustering in volatility (e.g., news shocks)
+
+        - h2[t]: Long-term, persistent volatility level
+                 Captures smooth shifts in long-run variance (e.g., volatility regimes)
+
+    The observation variance is:
+      Var(volume[t]) = exp(mu_volume/2 + h1[t]/2 + h2[t]/2)
+
+   */ 
+   // Log volume AR-1 Warm-up Coefficients Prior 
+   phi_volume1_warmup ~ normal(0,2)T[-1,1];     
+   phi_volume2_warmup ~ normal(0,2)T[-1,1];          
+   // Log volume conditional mean Prior
+   mu_volume1 ~  normal(-3.8, 0.8); // high-frequency
+   mu_volume2 ~  normal(-6.0, 0.6); // low-frequency
+   //
+   /*           
+               ---- Noise Scale for the volume process ----
+           tau1: Scale of short-term (high-frequency) volatility.
+           The same happens here just like "tau_state" for std of 
+		   log innovations for log returns 
+		   
+   */
+   tau1 ~ normal(0.00, 0.40) T[0,];  // Weakly informative
+   /*   
+      tau2: Scale of long-term (low-frequency) volatility component.
+      Encourages smooth transitions and persistent volatility structure.
+   */
+   tau2 ~ normal(0.00, 0.25) T[0,];  // Informative and regularizing
+   /*  
+                          ---- log-volatility for log-volume innovation ----
+						  
+                               Two-component stochastic volatility (SV)
+                                         (WANG, 2016, p. 65)
+								  
+	    A two-component stochastic volatility (SV) model decomposes log-volatility into two latent processes:
+		a short-term component that captures fast, transient shocks (e.g., crises), and a long-term component 
+		reflecting persistent, structural changes in volatility. The short-term term reacts quickly via a 
+		high-variance AR(1) process, while the long-term term evolves smoothly with lower innovation variance.
+		Together, they form a more flexible and realistic volatility structure.
+		
+   */
+   // Initial log Innovation "h_volume" for log volume 
+   /*  ---- Priors for burn-in M lags for ARFIMA-SV ---- */ 
+   h_volume_high[1]  ~ normal(mu_volume1 , tau1/ sqrt(1- phi_volume1_warmup * phi_volume1_warmup)); // High Volatility 
+   h_volume_low[1]   ~ normal(mu_volume2 , tau2/ sqrt(1- phi_volume2_warmup * phi_volume2_warmup)); // Low Volatility
+   /*  ---- Priors for burn-in M lags for ARFIMA-SV ---- */
+   for (t in 2:M){
+     h_volume_high[t] ~ normal(mu_volume_high[t], tau1);     // Short-term volatility evolution
+	 h_volume_low[t]  ~ normal(mu_volume_low[t], tau2);    // Long-term volatility evolution
+   }
+   //
+   /*  ---- The Log-innovations itself for SV-ARFIMA ---- */   
+   for (t in (M + 1):N){
+     h_volume_high[t] ~ normal(mu_volume_high[t], tau1);     // Short-term volatility evolution
+	 h_volume_low[t]  ~ normal(mu_volume_low[t], tau2);    // Long-term volatility evolution	
+   }
+   //   
+   for( t in 1:N){
+      /* ---- Likehood for log-returns volatility innovations ---- */
+      y[t] ~  student_t(3.82426 , alpha , exp(z[t]/2)); //  Accordingly with Figure1.1e
+      /* ---- Likehood for log-volume volatility innovations ---- */
+	  residuals[t] ~  gev(0, exp(h_volume_high[t]/2 + h_volume_low[t]/2), -0.180072);  //  Same here with Figure1.1f (Log PETR3_SA_Volume pdf)
+   }
+}
+
+
+
+generated quantities{
+   /*
+     Simulating conditional mean for log-volume
+   */
+   vector[N+T_forecast] mean_volume_new;
+   /* ---- Jump component 
+                    for "mean_volume_new" ----  */
+   vector[N+T_forecast] jumps_new;
+   /* 
+      ---- Spike-and-slab mix indicator for future jump
+           1 = slab (huge jump), 0 = spike (zero jump) ----  */
+   int is_slab;   
+   /*
+     Simulating residuals for log-volume
+
+   */
+   vector[N+T_forecast] residuals_new;
+   /*
+     Regime-specific mean of log-volatility
+
+   */
+   vector [N+T_forecast] mu_regime_new;
+   /*
+     Regime-specific coefficient of log-volatility innovation 
+
+   */
+   vector [N+T_forecast] beta10_regime_new;
+   /*
+     Regime-specific for volatility of log-volatility innovation 
+
+   */
+   vector [N+T_forecast] tau_regime_new;
+   /*
+     Forward probabilities for forecast horizon
+   */
+   vector[2] prob_forecast[N+T_forecast];
+   /* 
+   `log_lik`: Log-likelihood for observed data points,
+       used for WAIC/LOO-CV model comparison.
+   */   
+   vector [N] log_lik;
+   /* 
+      Forecasted (Simulated)  log-volatility innovations 
+                       for log returns 	  
+   */
+   vector [N+T_forecast] n_new;
+   /* 
+      Forecasted (Simulated) log-volatility innovations
+                       for log volume and its mean	  
+   */ 
+   vector [N+T_forecast] mu_volume_high_new;
+   vector [N+T_forecast] mu_volume_low_new;    
+   vector [N+T_forecast] h_volume_high_new;
+   vector [N+T_forecast] h_volume_low_new;
+   /* 
+      Simulating returns (Posterior predictive checks)
+   */
+   vector [N+T_forecast] y_sim;
+   /* 
+      Simulating log-volume (Posterior predictive checks)
+   */
+   vector [N+T_forecast] v_sim;
+   /* 
+      Simulating log-returns log volatility
+   */
+   vector [N+T_forecast] z_new;
+   /* 
+      Forecasted LSTM cell and hidden states 
+   */
+   vector [N+T_forecast] h_new;
+   vector [N+T_forecast] C_new;
+   /* 
+      Predicted LSTM gate outputs and states
+   */   	  
+   vector <lower=-1.0, upper=1.0>  [N+T_forecast] n_d_new;
+   vector <lower= 0.0, upper=1.0>  [N+T_forecast] g_i_new;
+   vector <lower= 0.0, upper=1.0>  [N+T_forecast] g_o_new;
+   vector <lower= 0.0, upper=1.0>  [N+T_forecast] g_f_new;
+   /*
+      Predicted momentum vectors for LSTM 
+   */
+   vector [N+T_forecast] v_g_o_new;
+   vector [N+T_forecast] v_n_d_new;
+   vector [N+T_forecast] v_g_i_new;
+   vector [N+T_forecast] v_g_f_new;
+   /*  
+      ---- Predicted momentum vectors for GRU ----
+   */
+   vector [N+T_forecast] v_g_f_gru_forward_new;
+   vector [N+T_forecast] v_h_gru_forward_new;  
+   vector [N+T_forecast] g_f_gru_forward_new;
+   vector [N+T_forecast] h_gru_forward_new;
+   vector [N+T_forecast] h_gru_forward_new_updated;
+   vector [N+T_forecast] h_gru_concatenate_new;
+   //
+   /*
+      Predicted periodic terms for volume conditional mean
+   */
+   real fourier_terms_2; 
+   real fourier_terms_3;
+   vector [N+T_forecast] periodic_component_sum_new;
+   /*
+      Copy observed data to new vectors for prediction
+   */
+   v_g_o_new[1:N] = v_g_o;
+   v_n_d_new[1:N] = v_n_d;
+   v_g_i_new[1:N] = v_g_i;
+   v_g_f_new[1:N] = v_g_f;
+   n_new[1:N] = n;
+   z_new[1:N] = z;
+   g_o_new[1:N] = g_o;
+   n_d_new[1:N] = n_d;
+   g_i_new[1:N] = g_i;
+   g_f_new[1:N] = g_f;
+   C_new[1:N] = C;
+   h_new[1:N] = h;
+   v_g_f_gru_forward_new[1:N] = v_g_f_gru_forward;
+   v_h_gru_forward_new[1:N] = v_h_gru_forward;
+   g_f_gru_forward_new[1:N] = g_f_gru_forward;
+   h_gru_forward_new[1:N] =  h_gru_forward;
+   h_gru_forward_new_updated[1:N] =  h_gru_forward_updated;
+   h_gru_concatenate_new[1:N] = h_gru_concatenate;   
+   residuals_new[1:N] = residuals;
+   mu_regime_new[1:N] = mu_regime;
+   beta10_regime_new[1:N] = beta10_regime;
+   tau_regime_new[1:N] = tau_regime;
+   periodic_component_sum_new[1:N] = periodic_component_sum;
+   mean_volume_new[1:N] = mean_volume;
+   h_volume_high_new[1:N] = h_volume_high;
+   h_volume_low_new[1:N] = h_volume_low;
+   mu_volume_high_new[1:N] = mu_volume_high;
+   mu_volume_low_new[1:N] = mu_volume_low;  
+   jumps_new[1:N] = jump;
+   prob_forecast[1:N] = probability;  
+   for (t in 1:N){
+   	 log_lik[t] =  student_t_lpdf(y[t]| 3.82426, alpha, exp(z[t]/2)) + 
+	                  gev_lpdf(residuals[t]| 0.0 ,exp(h_volume_high[t]/2 + h_volume_low[t]/2), -0.180072); 
+	  /*
+     	  In-sample posterior simulated returns
+	  */
+	  y_sim[t] = student_t_rng(3.82426 ,alpha ,exp(z[t]/2));
+	  /*
+     	  In-sample posterior simulated log-volume data 
+	  */
+	  v_sim[t] = gev_rng(mean_volume[t], exp(h_volume_high[t]/2 + h_volume_low[t]/2), -0.180072);	  
+   }
+   /*      
+                       One-step-ahead forecast of state probabilities:
+                                     p(s_{N+1} | y_{1:N})
+						  
+        HMM one-step-ahead regime forecast: p(s_{N+1}|y_{1:N}) = A' * p(s_N|y_{1:N})
+        Normalize to ensure probabilities sum to 1 and avoid numerical drift.
+   */
+   prob_forecast[N+1] = to_vector(A' * to_matrix(probability[N]));
+   prob_forecast[N+1] /= sum(prob_forecast[N+1]); // normalizes
+   /*   
+	     ---- LSTM momentum update for t= N+1 ---- 
+   */
+   v_g_o_new[N+1] = (momentum * v_g_o[N] + epsilon*thetv_o_scalar*n[N]);
+   v_n_d_new[N+1] = (momentum * v_n_d[N] + epsilon*thnv_d_scalar*n[N]);
+   v_g_i_new[N+1] = (momentum * v_g_i[N] + epsilon*thnv_i_scalar*n[N]);
+   v_g_f_new[N+1] = (momentum * v_g_f[N] + epsilon*thnv_f_scalar*n[N]);
+   /*
+      	 LSTM gate calculations  for forecast at t= N+1
+   */
+   g_o_new[N+1] = inv_logit(v_g_o_new[N+1] + thnw_o_scalar*h[N] + thnb_o_scalar);
+   n_d_new[N+1] = tanh(v_n_d_new[N+1]+ thnw_d_scalar*h[N] + thnb_d_scalar);
+   g_i_new[N+1] = inv_logit(v_g_i_new[N+1] + thnw_i_scalar*h[N] + thnb_i_scalar);
+   g_f_new[N+1] = inv_logit(v_g_f_new[N+1] + thnw_f_scalar*h[N] + thnb_f_scalar);
+   /* 
+    	 LSTM cell and hidden state for forecast at t= N+1
+   */
+   C_new[N+1] =   g_i_new[N+1] *n_d_new[N+1]  + g_f_new[N+1] *C[N]; 
+   h_new[N+1] =   g_o_new[N+1] * tanh(C_new[N+1]);
+   mu_regime_new[N+1] =  dot_product(mu_1_state_sorted,   prob_forecast[N+1]);
+   beta10_regime_new[N+1] = dot_product(beta10_state_sorted,   prob_forecast[N+1]);
+   tau_regime_new[N+1] = dot_product(tau_state_sorted,   prob_forecast[N+1]);
+   n_new[N+1] =  normal_rng(mu_regime_new[N+1] + beta10_regime_new[N+1]*h[N]+ rho*tau_regime_new[N+1]*exp(-0.5*z[N])*y[N] , 
+                 tau_regime_new[N+1]*sqrt(1-square(rho)));
+   /*   
+	    ---- Simulating new log-volatility (z_new) at t= N+1 ---- 
+	           ( Model 3, pg 64  WANG [2016] )
+   */
+   z_new[N+1] = n_new[N+1] + phi*(z[N]) + psi*(z[N-1]) +
+   monday_z* date[N+1,1] + tuesday_z*date[N+1,2] + wednesday_z*date[N+1,3] 
+   + thursday_z*date[N+1,4] + friday_z*date[N+1,5] + kpi*signals[N];	
+   /*  
+     	---- Simulating new log-returns (Posterior) at t= N+1 ---- 
+   */
+   y_sim[N+1] = student_t_rng(3.82426 ,alpha, exp(z_new[N+1]/2)); 
+   //
+   /*   
+	    ---- Simulating new log-volume innovations at t= N+1  ---- 
+   */
+   mu_volume_high_new[N+1] = mu_volume1;
+   mu_volume_low_new[N+1] = mu_volume2;
+   // Simulated Short-term volatility evolution
+   for (l in 1:M){
+     mu_volume_high_new[N+1] += psi_volume1[l] * (h_volume_high[N - l] - mu_volume1);   // Frac diff terms
+   }
+   for (i in 1:p){
+     mu_volume_high_new[N+1] += phi_volume1[i] * (h_volume_high[N-i]- mu_volume1);     // AR terms
+   }
+   for (j in 1:q){
+     mu_volume_high_new[N+1] += theta_volume1[j] * (h_volume_high[N-j]- mu_volume_high[N-j]);	// MA terms 
+   }
+   // Simulated Long-term volatility evolution	   
+   for (l in 1:M){   
+     mu_volume_low_new[N+1]  += psi_volume2[l] * (h_volume_low[N - l]- mu_volume2);    // Frac diff terms
+   }
+   for (i in 1:p){
+     mu_volume_low_new[N+1] += phi_volume2[i] * (h_volume_low[N-i]-mu_volume2);       // AR terms
+   }
+   for (j in 1:q){
+     mu_volume_low_new[N+1] += theta_volume2[j] * (h_volume_low[N-j]- mu_volume_low[N-j]);	  // MA terms 
+   }
+   //
+   h_volume_high_new[N+1] = normal_rng(mu_volume_high_new[N+1], tau1);
+   h_volume_low_new[N+1]  = normal_rng(mu_volume_low_new[N+1], tau2);
+   //
+   /*
+             ---- Simulating new residuals at t= N+1  ----
+						 
+         Simulates new residuals based on the log-volatility 
+		 from the SV-ARFIMA above.
+         
+   */
+   residuals_new[N+1] = gev_rng(0.0,exp(h_volume_high_new[N+1]/2 + h_volume_low_new[N+1]/2), -0.180072);
+   //
+   /* 
+     	---- Simulating new volume conditional mean at t= N+1 ----     
+   */ 
+   fourier_terms_2 = 0.0;
+   if (k1 > 0) {
+       for (j in 1:k1) { 
+		  fourier_terms_2 +=  alfa1[j] * sin((2*pi()*f1[j]) *(N+1)) + beta1[j] * cos((2*pi()*f1[j]) * (N+1));
+         }
+   }
+   periodic_component_sum_new[N+1] = fourier_terms_2;
+   /*			
+	     ---- Conditional mean iterations for forecasting at t= N+1 ----
+	                   *** Simulating new jumps ***
+   */
+   is_slab = 0;
+   is_slab = bernoulli_rng(pi_z); // 1 = slab (Huge jump), 0 = spike (almost zero)
+   if (is_slab == 1){
+      jumps_new[N+1] = normal_rng(0, sigma_slab);
+    }else{
+      jumps_new[N+1] = normal_rng(0, sigma_spike);
+   }
+   //
+   mean_volume_new[N+1] = m0;
+   mean_volume_new[N+1] += m1*exp(z_new[N+1]/2) + m2*square(exp(z_new[N+1]/2)) + m3*z_new[N+1];
+   mean_volume_new[N+1] += periodic_component_sum_new[N+1];
+   mean_volume_new[N+1] += jumps_new[N+1]; 
+   mean_volume_new[N+1] += di*Future_DI[N];
+   /*   
+	     ---- GRU momentum update for t= N+1 ---- 
+   */
+   v_g_f_gru_forward_new[N+1] = (momentum * v_g_f_gru_forward[N] + epsilon*thnw_f_gru_scalar_forward*h_gru_forward[N]);
+   g_f_gru_forward_new[N+1] =   inv_logit(v_g_f_gru_forward_new[N+1] + thnv_f_gru_scalar_forward*v[N] + thnb_f_gru_scalar_forward);
+   v_h_gru_forward_new[N+1] =   (momentum *v_h_gru_forward[N] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward_new[N+1] + h_gru_forward[N]));
+   h_gru_forward_new[N+1] =     tanh(v_h_gru_forward_new[N+1] + theta_h_gru_scalar_forward*v[N] + thnb_h_gru_scalar_forward);
+   h_gru_forward_new_updated[N+1] = (1- g_f_gru_forward_new[N+1])*h_gru_forward[N] +  g_f_gru_forward_new[N+1] *h_gru_forward_new[N+1];     
+   /*  
+	     *** For the backward GRU in forecasting:
+         Freezing the last backward hidden state.
+         This is the most common approach for practical forecasting with B-RNNs.
+         Use the last computed backward state from observed data
+		 
+   */
+   h_gru_concatenate_new[N+1] = gru_hidden_state_scalar*((h_gru_backward_updated[N] + h_gru_forward_new_updated[N+1])/2);
+   if (k > 0)  
+    for (m in 1:k) {
+      for (i in 1:k) {
+         mean_volume_new[N+1] += g_1[i, m + 1] * v[(N+1)-m];
+        }
+    }
+    if(p > 0) for (i in 1:p){ // If AR component is specified
+		 mean_volume_new[N+1] += phi_mean[i]*(h_gru_concatenate_new[(N+1)-i]); // AR terms on past observed terms.
+	}
+    if(q > 0) for(j in 1:q){ // If MA component is specified
+         mean_volume_new[N+1] += theta_mean[j] * residuals_new[(N+1)-j]; // MA terms on past residuals.
+    }
+	//
+	mean_volume_new[N+1] = swish(mean_volume_new[N+1] , beta_swish);
+	//
+	/*    
+	     ---- Simulating new log-volume (Posterior) at t= N+1 ---- 
+	*/
+	v_sim[N+1] = gev_rng(mean_volume_new[N+1],exp(h_volume_high_new[N+1]/2 + h_volume_low_new[N+1]/2), -0.180072); 
+    // 
+    /* 
+       ---- Regime forecast from t = [N+2, N+T_forecast] ---- 
+    */
+    for(t in (N+2):(N+T_forecast)) {
+     prob_forecast[t] = to_vector(A' * to_matrix(prob_forecast[t-1]));
+     prob_forecast[t] /= sum(prob_forecast[t]);
+	 //
+	 v_g_o_new[t] = (momentum * v_g_o_new[t-1] + epsilon*thetv_o_scalar*n_new[t-1]);
+     v_n_d_new[t] = (momentum * v_n_d_new[t-1] + epsilon*thnv_d_scalar*n_new[t-1]);
+     v_g_i_new[t] = (momentum * v_g_i_new[t-1] + epsilon*thnv_i_scalar*n_new[t-1]);
+     v_g_f_new[t] = (momentum * v_g_f_new[t-1] + epsilon*thnv_f_scalar*n_new[t-1]);
+	 /*
+      	 LSTM gate calculations  for forecast
+	 */
+	 g_o_new[t] = inv_logit(v_g_o_new[t] + thnw_o_scalar*h_new[t-1] + thnb_o_scalar);
+     n_d_new[t] = tanh(v_n_d_new[t]+ thnw_d_scalar*h_new[t-1] + thnb_d_scalar);
+	 g_i_new[t] = inv_logit(v_g_i_new[t] + thnw_i_scalar*h_new[t-1] + thnb_i_scalar);
+     g_f_new[t] = inv_logit(v_g_f_new[t] + thnw_f_scalar*h_new[t-1] + thnb_f_scalar);
+	 /* 
+    	 LSTM cell and hidden state for forecast
+	 */
+     C_new[t] =   g_i_new[t] *n_d_new[t]  + g_f_new[t] *C_new[t-1]; 
+     h_new[t] =   g_o_new[t] * tanh(C_new[t]);
+     mu_regime_new[t] =  dot_product(mu_1_state_sorted,   prob_forecast[t]);
+	 beta10_regime_new[t] = dot_product(beta10_state_sorted, prob_forecast[t]);
+	 tau_regime_new[t] = dot_product(tau_state_sorted,  prob_forecast[t]);
+     n_new[t] =  normal_rng(mu_regime_new[t] + beta10_regime_new[t]*h_new[t-1] + rho*tau_regime_new[t]*exp(-0.5*z_new[t-1])*y_sim[t-1] ,
+   	                        tau_regime_new[t]*sqrt(1-square(rho)));
+     //
+     z_new[t] = n_new[t] + phi*(z_new[t-1]) + psi*(z_new[t-2]) 
+	 + monday_z* date[t,1] + tuesday_z*date[t,2] + wednesday_z*date[t,3]
+	 + thursday_z*date[t,4] + friday_z*date[t,5] + kpi*signals[t-1];	
+     /*  
+     	 Simulating new log-returns (Posterior)
+	 */
+	 y_sim[t] = student_t_rng(3.82426 ,alpha, exp(z_new[t]/2)); 
+     //
+     /*   
+	    ---- Simulating new log-volume innovations  ---- 
+     */
+	 mu_volume_high_new[t] = mu_volume1;
+	 mu_volume_low_new[t]  = mu_volume2;
+	 // Simulated Short-term volatility evolution
+     for (l in 1:M){
+       mu_volume_high_new[t] += psi_volume1[l] * (h_volume_high_new[t - l] - mu_volume1);    // Frac diff terms
+	 }
+	 for (i in 1:p){
+       mu_volume_high_new[t] += phi_volume1[i] * (h_volume_high_new[t - i]- mu_volume1);     // AR terms
+	 }
+	 for (j in 1:p){
+       mu_volume_high_new[t] += theta_volume1[j] * (h_volume_high_new[t - j]- mu_volume_high_new[t-j]);	 // MA terms
+	 }
+	 // Simulated Long-term volatility evolution	 
+     for (l in 1:M){	   
+       mu_volume_low_new[t]  += psi_volume2[l] * (h_volume_low_new[t - l] - mu_volume2);     // Frac diff terms
+	 }
+	 for (i in 1:p){
+       mu_volume_low_new[t] += phi_volume2[i] * (h_volume_low_new[t - i]-mu_volume2);        // AR terms
+	 }
+	 for (j in 1:p){
+        mu_volume_low_new[t] += theta_volume2[j] * (h_volume_low_new[t - j]-mu_volume_low_new[t-j]);	 // MA terms 
+	 }
+     //
+     h_volume_high_new[t] = normal_rng(mu_volume_high_new[t], tau1);
+     h_volume_low_new[t]  = normal_rng(mu_volume_low_new[t], tau2);
+     //  
+     /*
+           ---- Simulating new residuals  ----
+     */	  
+     residuals_new[t] = gev_rng(0.0,exp(h_volume_high_new[t]/2 + h_volume_low_new[t]/2), -0.180072);
+     //	 
+	 /*  
+     	 Simulating new log-volume conditional mean 
+	 */
+	 fourier_terms_3 = 0.0;
+     if (k1 > 0) {
+       for (j in 1:k1) { 
+          fourier_terms_3 += alfa1[j] * sin((2*pi()*f1[j]) *(t)) + beta1[j] * cos((2*pi()*f1[j]) * (t));
+          }
+     } 
+     periodic_component_sum_new[t] = fourier_terms_3;
+	 /*			
+	      Simulating new jumps 
+	 */
+	 is_slab = 0;
+     is_slab = bernoulli_rng(pi_z); 
+     if (is_slab == 1){
+        jumps_new[t] = normal_rng(0, sigma_slab);
+     }else{
+        jumps_new[t] = normal_rng(0, sigma_spike);
+     }
+	 //
+	 mean_volume_new[t] = m0;
+     mean_volume_new[t] += m1*exp(z_new[t]/2) + m2*square(exp(z_new[t]/2)) + m3*z_new[t];	 
+     mean_volume_new[t] += periodic_component_sum_new[t];
+	 mean_volume_new[t] += jumps_new[t];
+     mean_volume_new[t] += di*Future_DI[t-1];     
+     /*  
+         GRU terms
+     */
+	 v_g_f_gru_forward_new[t] = (momentum * v_g_f_gru_forward_new[t-1] + epsilon*thnw_f_gru_scalar_forward*h_gru_forward_new[t-1]);
+     g_f_gru_forward_new[t] = inv_logit(v_g_f_gru_forward_new[t] + thnv_f_gru_scalar_forward*v_sim[t-1] + thnb_f_gru_scalar_forward);
+	 v_h_gru_forward_new[t] =  (momentum *v_h_gru_forward_new[t-1] + epsilon*thnw_h_gru_scalar_forward*(g_f_gru_forward_new[t] + h_gru_forward_new[t-1]));
+	 h_gru_forward_new[t] =  tanh(v_h_gru_forward_new[t] + theta_h_gru_scalar_forward*v_sim[t-1] + thnb_h_gru_scalar_forward);
+	 h_gru_forward_new_updated[t] = (1- g_f_gru_forward_new[t])*h_gru_forward_new[t-1] +  g_f_gru_forward_new[t] *h_gru_forward_new[t]; 
+	 h_gru_concatenate_new[t] = gru_hidden_state_scalar*((h_gru_backward_updated[N] + h_gru_forward_new_updated[t])/2);			
+     if (k > 0)  
+	   for (m in 1:k){
+         for (i in 1:k) {
+           mean_volume_new[t] += g_1[i, m + 1] * v_sim[t - m];
+          }
+        }
+        if(p > 0) for (i in 1:p){ // If AR component is specified
+		   mean_volume_new[t] += phi_mean[i]*(h_gru_concatenate_new[t-i]); // AR terms on past observed terms.
+	    }
+        if(q > 0) for(j in 1:q){ // If MA component is specified
+           mean_volume_new[t] += theta_mean[j] * residuals_new[t-j]; // MA terms on past residuals.
+        } 
+	mean_volume_new[t] = swish(mean_volume_new[t] , beta_swish);
+	/*  
+     	---- Simulating new log-volume (Posterior) ---- 
+    */
+	v_sim[t] = gev_rng(mean_volume_new[t],exp(h_volume_high_new[t]/2 + h_volume_low_new[t]/2), -0.180072);	 
+	}
+}
+
+"""   
+
+Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM  = pystan.StanModel(model_code=Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM)
+
+#   Data truction to fit log returns length
+
+KPI_lenght_to_trim =   len(Fundamental_analysis_KPI_PETR3_SA) - len(PETR3_SA_Close_fractional_difference_Linear_filtred)
+Time_length_to_trim =  len(PETR3_SA['Volume']) - len(PETR3_SA_Close_fractional_difference_Linear_filtred)
+Volume_length_to_trim =  len(PETR3_SA_volume_Linear_filtred_train) - len(PETR3_SA_Close_fractional_difference_Linear_filtred_train)
+Future_DI_length_to_trim = len(cdi_scaled) - len(PETR3_SA_Close_fractional_difference_Linear_filtred)
+
+
+data  = ({
+          'N' : len(PETR3_SA_Close_fractional_difference_Linear_filtred_train),
+          'T_forecast' : forecasting_extrapolation_lengh,
+		  'date': dates_dummies[Time_length_to_trim:].values.astype(np.int64),
+		  'p' : 1,  # Figure_1.1g
+		  'q' : 1,  # Figure_1.1h
+		  'k' : 1,  # number of peaks in Figure_1-1i (Spectogram analysis)
+		  'M' : 30, # Abritary choice , but literature recommends something around 30 lags.(To capture long range clusters)
+          'y':  PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.flatten().astype(np.float64),
+		  'v':  PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.flatten().astype(np.float64),
+		  'k1':  1, # Related to f1
+		  'signals': Fundamental_analysis_KPI_PETR3_SA[KPI_lenght_to_trim:]["signal"].values.flatten().astype(np.int64),
+          'Future_DI': cdi_scaled[Future_DI_length_to_trim:].values.flatten().astype(np.float64),
+		  'f1': [1/61.50]
+	     })
+		 
+		 
+control = {}
+control['max_treedepth'] = 7
+control['adapt_delta'] = 0.9999
+
+fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM = Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM.sampling(data=data, iter=15000, chains=1, warmup=7000 ,thin=1, seed=101, n_jobs = 1, control=control)
+
+# Parameters of interest and their dimensions
+param_names = fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM.sim['pars_oi']
+param_dims = fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM.sim['dims_oi']
+param_dict = dict(zip(param_names, param_dims))
+
+# EXCLUDE: everything not declared in the `parameters {}` block
+
+   	 
+EXCLUDE = {
+    # Transformed parameters
+    "phi_mean", "theta_mean", "mu_mean", "residuals", "g_1", "u_1", "mean_volume", "fourier_terms_1", "periodic_component_sum", "rho", "mu_regime",
+    "beta10_regime", "tau_regime", "phi", "psi", "psi_volume1", "psi_volume2","phi_volume1","phi_volume2","theta_volume1","theta_volume2",
+    "mu_volume_high", "mu_volume_low", "z", "h", "C", "mu","n_d","g_i","g_o","g_f","v_g_o","v_n_d","v_g_i","v_g_f","accumulator","mu","log_alpha",
+	"mu_1_state_sorted","beta10_state_sorted","tau_state_sorted","A","log_A","probability","v_g_f_gru_forward","v_h_gru_forward","v_g_f_gru_backward",
+	"v_h_gru_backward","g_f_gru_forward","h_gru_forward","h_gru_forward_updated","g_f_gru_backward","h_gru_backward","h_gru_backward_updated",
+	"h_gru_concatenate"
+    
+    # Generated quantities
+    "mean_volume_new", "jumps_new", "is_slab", "residuals_new", "mu_regime_new", "beta10_regime_new","tau_regime_new","prob_forecast",
+    "log_lik", "n_new", "mu_volume_high_new", "mu_volume_low_new", "h_volume_high_new", "h_volume_low_new","y_sim","v_sim","z_new",
+    "h_new", "C_new", "n_d_new", "g_i_new","g_o_new","g_f_new","v_g_o_new","v_n_d_new","v_g_i_new","v_g_f_new","v_g_f_gru_forward_new",
+    "v_h_gru_forward_new", "g_f_gru_forward_new", "h_gru_forward_new","h_gru_forward_new_updated","h_gru_concatenate_new","fourier_terms_2",
+	"fourier_terms_3","periodic_component_sum_new"
+}
+
+# Filter only those in the `parameters` block
+filtered_param_dict = {
+    name: dim for name, dim in param_dict.items()
+    if name not in EXCLUDE
+}
+
+# Count total number of scalar parameters
+total_filtered_params = sum(np.prod(dim) if dim else 1 for dim in filtered_param_dict.values())
+
+print("Total number of scalar parameters (parameters block only):", total_filtered_params)
+#   Total number of scalar parameters (parameters block only): 1547
+
+Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM = az.from_pystan(
+    posterior=fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM,
+    observed_data=["y", "v"],
+    log_likelihood="log_lik"
+)
+
+# --- Calculate WAIC ---
+waic_result = az.waic(Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM)
+
+print("\n--- WAIC Results ---")
+print(waic_result)
+
+#   Computed from 8000 by 242 log-likelihood matrix
+
+#             Estimate       SE
+#   elpd_waic    24.73    19.20
+#   p_waic      254.18        -
+
+
+
+###################################*/                      \*###################################
+#
+#    Computed from 8000 by 242 log-likelihood matrix
+#
+#                Estimate     SE
+#    elpd_waic      24.73  19.20
+#    p_waic        254.18      -
+#
+#    There has been a warning during the calculation. Please check the results.
+#
+#    
+#    24.73 (elpd_waic)  : 
+#
+#        *   The value elpd_waic = 24.73 represents the expected log predictive density 
+#		     of the model for new data, based on posterior simulations.More positive (less negative) values 
+#		     indicate better out-of-sample predictive performance. In absolute terms, the value itself has no specific threshold,
+#		     it is only meaningful when compared to other models fitted to the same data.
+#
+#            A model with higher elpd_waic (closer to zero) is generally preferred, assuming differences exceed the combined standard
+#		     error of comparison.
+#
+#	 19.20 (SE - Standard Error)  : 
+#
+#
+#         *  This represents the uncertainty in the elpd_waic estimate.
+#            A smaller standard error indicates a more precise estimate. When comparing models,
+#	         if the difference in elpd_waic values is larger than the sum of their standard errors,
+#	         it suggests a statistically significant difference in predictive performance.
+#
+#            For example, if:
+#
+#               Model A: elpd_waic = -224.20, SE = 21.64
+#
+#               Model B: elpd_waic = -200.00, SE = 18.00
+#               
+#               Difference = 24.20,
+#               Sum of SEs = 21.64 + 18.00 = 39.64
+#               Since 24.20 < 39.64 -> not significant
+#
+#	 p_waic: 254.18  :   
+#
+#
+#         *  Although the model contains 1547 declared scalar parameters, 
+#		     the effective number of parameters estimated by p_waic is only 254.18.
+#            This substantial difference indicates that many parameters are regularized,
+#			 latent, or weakly identified, and thus do not substantially increase the 
+#			 model's flexibility or risk of overfitting.
+#
+#            The model leverages hierarchical structure, strong priors, and latent processes 
+#			 (like the Pointwise , Quasi-LSTM, Quasi-GRU, and HMM components), which constrain posterior variance.
+#
+#            A lower p_waic than the raw parameter count is expected and often desirable,
+#			 as it reflects model parsimony and Bayesian regularization in action
+#
+#            "Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM"  model has moderate 
+#            predictive ability, with some room for improvement.   
+#
+###################################*/                      \*###################################
+
+# Define the directory and filename
+save_directory = r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA'
+filename = 'Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM.pkl'
+
+# Construct the full file path
+full_path = os.path.join(save_directory, filename)
+
+# Save the model
+with open(full_path, 'wb') as f:
+    pickle.dump(fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM, f)
+
+# Load the model
+with open(full_path, 'rb') as f:
+    Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM = pickle.load(f)
+
+#=============*/        \*=================	    
+
+samples = fit_Quasi_Bidirectional_MomentumGRU_Gegenbauer_FARMA_MS_SVVol_MomentumLSTM.extract() 
+
+#=============*/        \*=================	
+
+   
+volume_hat = samples["v_sim"]
+  
+pd.DataFrame(volume_hat).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\Volume_estimated.csv', index=None)
+Volume_estimated = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/Volume_estimated.csv")
+
+# ---- Plotting ----
+#          (Volume train sample)
+
+Volume_estimated_mean = Volume_estimated.mean(axis=0)
+
+x_lower, x_upper = np.percentile(Volume_estimated, [2.5, 97.5], axis=0)
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10), sharex=True)
+ax.plot(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:] , label='Observed desazionated volume train (v)', color='grey', alpha=0.7)
+ax.plot(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], Volume_estimated_mean[:-forecasting_extrapolation_lengh], label='Volume In Sample', color='blue', linewidth=2)
+ax.fill_between(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], x_lower[:-forecasting_extrapolation_lengh],x_upper[:-forecasting_extrapolation_lengh], color='blue', alpha=0.2, label='95% Credible Interval')
+ax.set_ylabel('Value')
+ax.set_title('Estimated Volume in Sample')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+fig.autofmt_xdate() 
+plt.tight_layout() 
+plt.show()
+
+
+# Figure_2.1a_In_Sample_Volume.
+
+
+############################
+#   In Sample regression   #
+#        metrics KPI       #
+#                          #
+############################                                                                                                                                                            
+
+MSE = mean_squared_error(Volume_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel(),PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.ravel())
+ 
+RMSE = math.sqrt(MSE)
+print('RMSE: %f' % RMSE)
+#  RMSE: 0.426682
+
+
+#             -------------------*/          \*-------------------
+#
+#   RMSE (Root Mean Squared Error):
+#
+#   The RMSE value of 0.4267 indicates the average magnitude of forecast errors.
+#   In practical terms, it means that, on average, the model’s predicted volume
+#   deviates from the actual observed volume by about 0.43 units.
+#
+#   *** Interpretation with Scaled Data (0.00 to 6.63): ***
+#
+#       Magnitude of Error:  Given that both observed and estimated volumes are scaled
+#       between 0.00 and 6.63, an RMSE of 0.43 represents a small average deviation.
+#
+#       Relative to Scale:  This error is approximately (0.43 / 6.63) = 6.5% of the full scale range.
+#       Such a small proportion indicates that the model captures most of the variation
+#       in the observed series accurately.
+#
+#       Visual Consistency:  This aligns with Figure_2.1a, where the "Volume In Sample"
+#       (blue line) tracks the "Observed desazonized volume" (gray line) closely, with
+#       most observations lying within the 95% credible interval.
+#
+#       Overall:  An RMSE around 0.43 on this scale indicates a strong in-sample fit,
+#       suggesting that the model effectively learns the volume dynamics.
+#
+#             -------------------*/          \*------------------- 
+
+mae = mean_absolute_error(Volume_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel(),PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.ravel())
+print('MAE: %f' % mae)
+#   MAE:  0.156023
+
+#             -------------------*/          \*------------------- 
+#
+#   MAE (Mean Absolute Error):
+#
+#   The MAE value of 0.1560 indicates that, on average, the absolute difference
+#   between predicted and actual volumes is about 0.16 units.
+#
+#   *** Interpretation with Scaled Data (0.00 to 6.63): ***
+#
+#       Direct Interpretability:  Unlike RMSE, MAE is expressed in the same units
+#       as the target variable, making it directly interpretable. Given that the
+#       data are scaled between 0.00 and 6.63, an average absolute error of 0.16
+#       is quite small.
+#
+#       Robustness to Outliers:  MAE is less sensitive to large deviations than RMSE,
+#       as it uses linear rather than squared penalties for errors.
+#
+#       Comparative Performance:
+#           * RMSE = 0.4267
+#           * MAE  = 0.1560
+#         The fact that MAE < RMSE is expected; their moderate difference (~0.27)
+#         indicates a few larger errors — visible as occasional spikes missed by
+#         the forecast (e.g., around Sept 2024 and Mar 2025) — but overall the
+#         fit remains strong and consistent.
+#
+#       Overall:  An MAE of 0.16 confirms that the model performs well in capturing
+#       the typical level and variation of the volume series in-sample.
+#
+#             -------------------*/          \*------------------- 
+
+coefficient_of_dermination = r2_score(PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.ravel(), Volume_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel())
+print('R2: %f' % coefficient_of_dermination)
+#   R2:  0.772082 
+
+#             -------------------*/          \*------------------- 
+#
+#   R-squared (R²): Coefficient of Determination
+#
+#   The R-squared value of 0.772 indicates that approximately 77.2% of the variance
+#   in the observed filtered volume (PETR3_SA_volume_Linear_filtred_train)
+#   can be explained by the model’s estimated volume (Volume_estimated_mean).
+#
+#   *** Interpretation: ***
+#
+#       Strength of Fit:
+#       An R-squared of 0.77 is generally considered a reasonably good fit
+#       for a regression model, especially in time-series forecasting contexts.
+#       It suggests that the model effectively captures a large proportion of the
+#       variability present in the observed volume data.
+#
+#       Proportion of Variance Explained:
+#       This means that the dynamic patterns learned by the model
+#       (e.g., through LSTM, GRU, HMM, and other structural components)
+#       account for more than three-quarters of the total variation in volume.
+#
+#       Implications for Prediction:
+#       A high R-squared such as this indicates that the model’s predictions
+#       not only produce small average errors (as shown by the MAE and RMSE)
+#       but also track the temporal fluctuations — peaks, troughs, and trends —
+#       of the observed volume series closely.
+#
+#       Context with Scaled Data (0.0–6.63):
+#       Given that the volume data are scaled within this range,
+#       an R-squared of 0.77 confirms that the model explains the majority
+#       of movements in the series with high accuracy.
+#
+#       Complementary Metric:
+#       While R-squared quantifies the proportion of variance explained,
+#       it should always be interpreted alongside error metrics such as RMSE and MAE.
+#       The combination of a high R-squared (0.77), low RMSE (~0.43), and low MAE (~0.16)
+#       strongly supports that the model provides a robust and reliable in-sample fit.
+#
+#             -------------------*/          \*------------------- 
+
+
+
+
+Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test = ks_2samp(PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.ravel(), Volume_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel())
+print('statistic: %f   ,pvalue: %f' % (Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test[0],Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test[1]))
+#   statistic: 0.090909   ,pvalue: 0.270392
+
+
+#             -------------------*/          \*------------------- 
+#
+#   Kolmogorov–Smirnov (KS) Two-Sample Test for Distribution Adherence
+#
+#   Statistic: 0.0909
+#   p-value:   0.2704
+#
+#   Purpose:
+#   The KS test evaluates whether the distribution of the model’s estimated
+#   volume differs significantly from the distribution of the actual observed volume.
+#   It compares their empirical cumulative distribution functions (ECDFs)
+#   to measure the largest absolute deviation between them.
+#
+#   *** Interpretation: ***
+#
+#       Null Hypothesis (H0):
+#           The two samples (observed and estimated volumes) are drawn from
+#           the same underlying distribution.
+#
+#       Alternative Hypothesis (H1):
+#           The two samples come from different distributions.
+#
+#       p-value = 0.2704 > 0.05:
+#           Since the p-value is greater than the 5% significance level,
+#           we fail to reject the null hypothesis.
+#           This suggests there is no statistically significant difference
+#           between the distribution of the model’s estimated volumes
+#           and that of the observed data.
+#
+#       KS Statistic = 0.0909:
+#           This value represents the maximum absolute difference between
+#           the cumulative distribution functions (CDFs) of the two samples.
+#           A smaller KS statistic indicates closer agreement between
+#           the two distributions.
+#
+#       Conclusion:
+#           The model reproduces the overall shape of the empirical volume
+#           distribution reasonably well. The difference is not large enough
+#           to be considered statistically significant at the 5% level.
+#
+#             -------------------*/          \*-------------------
+
+
+# ---- QQplot between the two samples ----
+
+# Sort both arrays ( It's needed to align the percentiles in both distributions)
+sorted_obs = np.sort(PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.ravel().astype(np.float64))
+sorted_hat = np.sort(Volume_estimated_mean[:-forecasting_extrapolation_lengh].values.ravel().astype(np.float64))
+
+
+# Q-Q Plot between y_obs and y_hat
+plt.figure(figsize=(6, 6))
+plt.plot(sorted_obs, sorted_hat, 'o')
+plt.plot([sorted_obs.min(), sorted_obs.max()],
+         [sorted_obs.min(), sorted_obs.max()], 'r--')  # 45-degree line
+plt.title("Q-Q Plot: v_hat vs v_obs")
+plt.xlabel("Observed Quantiles for Volume In-Sample")
+plt.ylabel("Predicted Quantiles for Volume In-Sample")
+plt.grid(True)
+plt.show()
+
+
+# Figure_2.1b_Q-Q_Plot_between_volume_In_Sample_and_estimated
+
+
+#             -------------------*/          \*-------------------
+#
+#   Q–Q Plot Interpretation: Predicted (v_hat) vs. Observed (v_obs) Volume Quantiles
+#
+#   The in-sample Q–Q plot comparing predicted and observed volume quantiles
+#   provides a clear assessment of the model’s distributional calibration.
+#
+#   Central Fit:
+#       For most of the distribution (up to approximately the 3.5–4.0 quantile range),
+#       the predicted quantiles lie very close to the 45° reference line.
+#       This indicates that the model captures the central behavior of volume dynamics
+#       — including the median and most frequent values — with high accuracy.
+#
+#   Tail Behavior and Bias:
+#       A noticeable departure from the reference line occurs at the upper quantiles
+#       (Observed Quantiles > ~3.5). The predicted quantiles (y-axis) fall consistently
+#       below the 45° line in this region, indicating that the model tends to
+#       underpredict extreme high-volume observations.
+#       In other words, while the model tracks moderate fluctuations well,
+#       it underestimates the magnitude of the most intense volume spikes.
+#
+#   Overall Conclusion:
+#       The Q–Q plot suggests that the model is well-calibrated for typical
+#       volume activity, but exhibits a systematic in-sample bias in the upper tail.
+#       This limits its ability to fully reproduce the heavy-tailed characteristics
+#       observed in the empirical volume distribution.
+#
+#             -------------------*/          \*-------------------
+
+
+####################################
+#  Out of Sample                   #
+#        predictive KPI peformace  #
+#                                  #
+####################################
+
+# (Volume test sample) 
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10), sharex=True)
+ax.plot(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], PETR3_SA_volume_Linear_filtred_test , label='Observed desazionated volume test (v)', color='grey', alpha=0.7)
+ax.plot(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], Volume_estimated_mean[-forecasting_extrapolation_lengh:], label='Volume Out of Sample', color='blue', linewidth=2)
+ax.fill_between(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], x_lower[-forecasting_extrapolation_lengh:],x_upper[-forecasting_extrapolation_lengh:], color='blue', alpha=0.2, label='95% Credible Interval')
+ax.set_ylabel('Value')
+ax.set_title('Estimated Volume Out of Sample Sample')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+fig.autofmt_xdate() 
+plt.tight_layout() 
+plt.show()
+
+# Figure_2.1c_Out_of_Sample_Volume
+
+#  Due to the very small out-of-sample size (only 5 observations),
+#  MAE was selected as the primary regression KPI,
+#  since it directly measures individual forecast accuracy.
+
+mae = mean_absolute_error(Volume_estimated_mean[-forecasting_extrapolation_lengh:].values.ravel(),PETR3_SA_volume_Linear_filtred_test.values.ravel())
+print('MAE: %f' % mae)
+#   MAE:  0.466743
+
+
+#             -------------------*/          \*-------------------
+#
+#   Out-of-Sample MAE (Mean Absolute Error):
+#
+#   MAE: 0.466743
+#
+#   Interpretation:
+#
+#   Forecast Accuracy (MAE): 
+#
+#        The MAE of 0.466743 indicates that, on average, the forecast (the blue line) 
+#        is off by about 0.47 units of volume from the actual observed volume (the grey line)
+#        in the out-of-sample period. Given that the volume values range from 1 to about 4 in the test set,
+#        an MAE of ≈0.47 seems reasonably good for the initial part of the forecast, perhaps less so towards the end.
+#
+#
+#    Tracking/Bias:
+#
+#        The forecast (blue line) generally tracks the observed data (grey line) quite closely for the first 3 or 4 points 
+#        (from 06-09 00 to 06-12 00). In this initial segment, the forecast appears to be quite accurate, which is consistent
+#        with a relatively low MAE. For the final observation (at 06-13 00), the observed volume (≈3.75) appears slightly lower
+#        than the forecast volume (≈4.0). The forecast slightly overestimated the final point.
+#
+#
+#    Uncertainty (95% Credible Interval):
+#
+#         The 95% Credible Interval (light blue shaded area) starts relatively narrow and then expands dramatically over the 5 
+#         observation points.The observed data (grey line) remains entirely within the 95% credible interval for all 5 observations. 
+#         This is a positive sign, indicating that the model's estimate of uncertainty is correct or conservative, as the actual outcomes
+#         fell within the predicted range.
+#
+#         The massive expansion of the interval towards the last point (reaching a high of ≈21 and a low of ≈−1) highlights the
+#         growing uncertainty in the volume prediction over time. This is typical for time series forecasts, especially those based 
+#         on models where uncertainty compounds over the prediction horizon. The model quickly loses confidence in the precision of its mean estimate.
+#
+#    Conclusion based on evidence: 
+#          
+#         The model provided a good short-term forecast, as evidenced by the low MAE and the close tracking of the observed data.
+#         However, the rapidly expanding 95% credible interval indicates that the long-term prediction (even just across 5 steps)
+#         is highly uncertain, suggesting the model is capturing a potentially volatile or unpredictable component in the volume series.
+#
+#             -------------------*/          \*-------------------
+
+
+#########################################
+#   Checking for volume residuals       #
+#                    homocedasticity    #
+#########################################
+
+def calculate_residuals(observed_values, predicted_location, predicted_scale, epsilon=1e-8):
+    """
+     
+    References :
+
+        CRYER, Jonathan D.; CHAN, Kung-Sik. Time Series Analysis: With Applications in R. 2. ed. New York: Springer, 2008.
+
+        HILPISCH, Yves. Python for Finance: Mastering Data-Driven Finance. 2. ed. Sebastopol, CA: O’Reilly Media, 2019.
+
+        HYNDMAN, Rob J.; ATHANASOPOULOS, George. Forecasting: Principles and Practice. 3. ed. Melbourne: OTexts, 2021.
+        Disponível em: [https://otexts.com/fpp3/](https://otexts.com/fpp3/). Acesso em: 25 set. 2025.
+
+        TSAY, Ruey S. *Analysis of Financial Time Series . 3. ed. Hoboken, NJ: John Wiley & Sons, 2010.
+    
+    
+    #   Calculates standardized residuals: (Observed - Predicted Location) / Predicted Scale.
+
+    Args:
+        observed_values (array-like): The actual observed values
+        predicted_location (array-like or scalar): The model's conditional mean (location).
+        predicted_scale (array-like): The model's conditional standard deviation (scale/volatility).
+        epsilon (float): A small value used to check for near-zero division in the scale.
+
+    Returns:
+        numpy.ndarray: The standardized residuals.
+    """
+    observed_values = np.asarray(observed_values, dtype=np.float64).ravel()
+    predicted_location = np.asarray(predicted_location, dtype=np.float64).ravel()
+    predicted_scale = np.asarray(predicted_scale, dtype=np.float64).ravel()
+    ########*/          \*########
+    #
+    # 1. Shape/Length Checks
+    #
+    ########*/          \*########
+    if observed_values.shape != predicted_scale.shape:
+        raise ValueError("Lengths of observed_values and predicted_scale must match.")
+    ########################*/          \*########################
+    #
+    # Check if location is a scalar or matches the length of the data
+    #
+    ########################*/          \*########################
+    if predicted_location.size > 1 and observed_values.shape != predicted_location.shape:
+        raise ValueError("Lengths of observed_values and predicted_location must match if predicted_location is an array.")
+    ########################*/          \*########################
+    #
+    # 2. Safety Check for Zero Division
+    #
+    ########################*/          \*########################
+    if np.any(predicted_scale < epsilon):
+        raise ValueError(
+            "Predicted scale contains values too close to zero (below {}). Cannot calculate standardized residuals.".format(epsilon)
+        )
+    ########*/          \*########
+    #
+    # 3. Calculation
+    #
+    ########*/          \*########
+    return (observed_values - predicted_location) / predicted_scale
+    
+    
+mean_volume = samples["mean_volume"]
+  
+pd.DataFrame(mean_volume).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\mean_volume.csv', index=None)
+mean_volume = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/mean_volume.csv")
+    
+mean_volume_mean = mean_volume.mean(axis=0)
+
+#=============*/        \*=================
+
+h_volume_high = samples["h_volume_high"]
+  
+pd.DataFrame(h_volume_high).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\h_volume_high.csv', index=None)
+h_volume_high = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/h_volume_high.csv")
+    
+h_volume_high_mean = h_volume_high.mean(axis=0)
+
+#=============*/        \*=================
+
+h_volume_low = samples["h_volume_low"]
+  
+pd.DataFrame(h_volume_low).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\h_volume_low.csv', index=None)
+h_volume_low = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/h_volume_low.csv")
+    
+h_volume_low_mean = h_volume_low.mean(axis=0)
+
+#=============*/        \*=================
+
+log_volume_location = mean_volume_mean
+
+pd.DataFrame(log_volume_location).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\log_volume_location.csv', index=None)
+log_volume_location = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/log_volume_location.csv")
+
+#=============*/        \*=================
+
+log_volume_scale = np.exp(h_volume_high_mean/2 + h_volume_low_mean/2)
+
+pd.DataFrame(log_volume_scale).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\log_volume_scale.csv', index=None)
+log_volume_scale = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/log_volume_scale.csv")
+
+model_0_residuals_log_volume = calculate_residuals(PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.flatten().astype(np.float64),
+                   log_volume_location, log_volume_scale)
+                   
+volume_in_sample = Volume_estimated_mean[:-forecasting_extrapolation_lengh]
+
+#=============*/        \*=================				   
+# Plot Residuals vs. Fitted Values 
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x=volume_in_sample, y=model_0_residuals_log_volume, alpha=0.7)
+plt.axhline(0, color='red', linestyle='--', linewidth=0.8)
+plt.title('Residuals vs. Fitted Values')
+plt.xlabel('Fitted Values')
+plt.ylabel('Residuals')
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+
+# The model shows good overall behavior regarding linearity, as the residuals are scattered
+# randomly around zero. However, the trend toward greater dispersion of residuals at
+# higher fitted values indicates that the assumption of homoscedasticity may be violated.
+# If heteroscedasticity is significant, it does not invalidate the model, but it makes
+# the standard errors (and consequently, confidence intervals and t-tests) less reliable.
+
+# Figure_2.1d_Residuals_vs_Fitted Values(Log-volume).
+
+
+# --- Breusch-Pagan Test ---
+# Arguments: residuals, X (exog, independent variables)
+# Returns: lagrange_multiplier, p_value_lm, fvalue, p_value_f
+lm, lm_pvalue, fvalue, f_pvalue = het_breuschpagan(model_0_residuals_log_volume, 
+PETR3_SA_volume_Linear_filtred_train[Volume_length_to_trim:].values.astype(np.float64))
+
+
+print(f"\n--- Breusch-Pagan Test ---")
+print(f"Lagrange Multiplier p-value: {lm_pvalue:.4f}")
+print(f"F-statistic p-value:         {f_pvalue:.4f}")
+if lm_pvalue < 0.05:
+    print("  -> Significant p-value suggests presence of heteroscedasticity (reject H0).")
+else:
+    print("  -> No significant evidence of heteroscedasticity (fail to reject H0).")
+
+#   No significant evidence of heteroscedasticity (fail to reject H0).
+
+
+#=============*/        \*=================	
+
+
+log_z_new = samples["z_new"]
+z_new = np.exp(log_z_new/2)
+
+pd.DataFrame(z_new).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\Returns_volatility.csv', index=None)
+Returns_volatility = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/Returns_volatility.csv")
+
+# ---- Plotting ----
+#          (Volatility)
+
+Returns_volatility_mean = Returns_volatility.mean(axis=0)
+
+x_lower, x_upper = np.percentile(Returns_volatility, [2.5, 97.5], axis=0)
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10), sharex=True)
+ax.plot(PETR3_SA_Dates_log_dif, Returns_volatility_mean, label='Volatility', color='blue', linewidth=2)
+ax.fill_between(PETR3_SA_Dates_log_dif, x_lower,x_upper, color='blue', alpha=0.2, label='95% Credible Interval')
+# Assume T_train is the number of training observations
+Time_train = len(PETR3_SA_Close_fractional_difference_Linear_filtred_train)
+split_date_index = PETR3_SA_Dates_log_dif[Time_train - 1] # This is the last date of the training set
+# --- Add the vertical line for in-sample / out-of-sample separation ---
+# Use ax.axvline() to draw a vertical line at the specific x-coordinate (date or index)
+ax.axvline(x=split_date_index, color='red', linestyle='--', linewidth=1.5, label='In-sample / Out-of-sample Split')
+ax.set_ylabel('Value')
+ax.set_title('Estimated Volatility')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+fig.autofmt_xdate() 
+plt.tight_layout() 
+plt.show()
+
+# Figure_2.1e_Log_Returns_Volatility. 
+
+#             -------------------*/          \*-------------------
+#
+#    The graph displays the estimated Volatility (blue line) over time, along with its 95%
+#    Credible Interval (95% CI - blue shaded area). The dashed red vertical line marks the
+#    split point between the training (In-sample) and test (Out-of-sample) data.
+#
+#    1. Volatility Behavior
+#    
+#        Volatility Clustering: The most evident characteristic is the clustering of volatility.
+#        We observe clear periods where volatility is consistently high (peaks), followed by
+#        periods where it is consistently low (valleys).
+#    
+#        Notable Peaks: 
+#         
+#        Volatility reaches significant peaks, approaching or exceeding 0.5 and,
+#        in one case, nearly 0.8 (in 2025-04).
+#    
+#        Implication: 
+#         
+#        This behavior is typical of financial time series and suggests the model
+#        is correctly capturing the  long-term dependence and 'market mood' 
+#        (turbulent days tend to be followed by turbulent days).
+#
+#    2. Credible Interval Analysis (Uncertainty)
+#    
+#        Constant Amplitude: 
+#         
+#        Unlike the estimated volume graph, the 95% CI does not appear to widen
+#        significantly as time progresses (within the In-sample period).
+#
+#        Implication: 
+#
+#        This suggests that the uncertainty in the volatility estimate is relatively
+#        stable, regardless of whether we are in a high or low volatility period. The model has
+#        consistent confidence in its estimate.
+#        
+#        Future Volatility (Out-of-sample): 
+#         
+#        The last In-sample point (before the red line) shows a slight peak. The CI remains 
+#        stable or slightly narrows in the Out-of-sample section, with the mean volatility falling slightly. 
+#        This indicates the model predicts a reduction (or stabilization) in volatility post-split, with controlled uncertainty.
+#
+#    3. Seasonality or Periodicity
+#
+#        Recurring Pattern: 
+#
+#        There is a suggestion of a semi-regular pattern in the volatility
+#        peaks (e.g., late 2024, early 2025, and again in spring/summer 2025).
+#    
+#        Implication: 
+#         
+#        While volatility is inherently hard to predict, modeling could benefit if
+#        seasonality is confirmed. The model appears to be capturing this recurrence.
+#
+#             -------------------*/          \*-------------------
+
+
+y_hat = samples["y_sim"]
+  
+pd.DataFrame(y_hat).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\Log_Returns_estimated_model_0.csv', index=None)
+Log_Returns_estimated_model_0 = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/Log_Returns_estimated_model_0.csv")
+			
+# ---- Plotting ----
+#          (Log Returns train sample)  
+
+y_hat_in_sample = Log_Returns_estimated_model_0.mean(axis=0)
+
+x_lower, x_upper = np.percentile(Log_Returns_estimated_model_0, [2.5, 97.5], axis=0)
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10), sharex=True)
+ax.plot(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], PETR3_SA_Close_fractional_difference_Linear_filtred_train , label='Observed log returns train (v)', color='grey', alpha=0.7)
+ax.plot(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], y_hat_in_sample[:-forecasting_extrapolation_lengh], label='Log returns In Sample', color='blue', linewidth=2)
+ax.fill_between(PETR3_SA_Dates_log_dif[:-forecasting_extrapolation_lengh], x_lower[:-forecasting_extrapolation_lengh],x_upper[:-forecasting_extrapolation_lengh], color='blue', alpha=0.2, label='95% Credible Interval')
+ax.set_ylabel('Value')
+ax.set_title('Estimated Log Returns in Sample')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+fig.autofmt_xdate() 
+plt.tight_layout() 
+plt.show()
+
+# Figure_2.1f_In_Sample_Log_Returns.
+
+
+############################
+#   In Sample regression   #
+#        metrics KPI       #
+#                          #
+############################                                                                                                                                                            
+
+MSE = mean_squared_error(y_hat_in_sample[:-forecasting_extrapolation_lengh].values.ravel(), PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel())
+ 
+RMSE = math.sqrt(MSE)
+print('RMSE: %f' % RMSE)
+
+#  RMSE: 0.230652
+
+#             -------------------*/          \*-------------------
+#
+#    The graph compares the observed log returns (grey line) with the estimated in-sample log returns (blue line)
+#    and the 95% Credible Interval (95% CI - blue shaded area).
+#
+#    1. Mean Forecast (Blue Line):
+#    
+#        The estimated log return (blue line) is virtually flat and centered around zero throughout the entire period.
+#        
+#        Implication: 
+#         
+#        This is a typical and expected behavior for models predicting financial asset log returns.
+#        The standard assumption of the Efficient Market Hypothesis (EMH) is that the best unconditional forecast
+#        for tomorrow's return is zero, as consistent price movements cannot be predicted. The model is correctly
+#        capturing the series' mean, which is close to zero.
+#
+#    2. Tracking Observed Data (Grey Line):
+#
+#        The actual returns (grey line) show large fluctuations (volatility), yet their mean (the blue line) remains at zero.
+#        
+#        Implication: 
+#        
+#        The model is not attempting to predict individual daily peaks, but rather the process's mean, which is zero.
+#        This is an intrinsic limitation when predicting the mean of returns in an efficient market.
+#
+#    3. Credible Interval (95% CI):
+#    
+#        The 95% CI covers the vast majority of observed returns. The widening and narrowing of the interval over time
+#        (capturing periods of high and low dispersion) successfully reflects the volatility clustering analyzed previously.
+#    
+#        Implication: 
+#         
+#        The model is successful in estimating the uncertainty (volatility) of returns, even though it does not
+#        predict the direction of the daily return.
+#
+#    4. RMSE Metric Analysis:
+#
+#       Interpretation: 
+#
+#       An RMSE of 0.230652 means that, on average, the deviation of the prediction (which is approx. 0) from
+#       the observed log return is about 0.23 units.
+#    
+#       Context: 
+#        
+#       For return models, the RMSE effectively serves as an estimate of the "In-Sample Daily Volatility"
+#       (standard deviation of returns). A non-zero RMSE is expected because volatility is always present.
+#       The value 0.23 aligns with the "average" volatility range observed in the volatility graph, confirming that the RMSE
+#       is a good estimate of the returns' uncertainty.
+#
+#             -------------------*/          \*-------------------
+
+mae = mean_absolute_error(y_hat_in_sample[:-forecasting_extrapolation_lengh].values.ravel(),PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel())
+print('MAE: %f' % mae)
+
+#  MAE: 0.164696
+
+#             -------------------*/          \*-------------------
+#
+#    Interpretation of MAE for Log Returns:
+#       
+#       The MAE value of 0.164696 indicates that, on average, the predicted log return (which is close to zero)
+#       deviates from the observed log return by approximately 0.16 units.
+#       For financial return models, MAE, like RMSE, serves as a measure of the average magnitude of returns,
+#       reflecting the inherent volatility in the series.
+#       The MAE is typically lower than the RMSE (which was 0.230652), suggesting the presence of large deviations
+#       (outliers or high peaks of volatility) in the returns data, which are penalized more heavily by the RMSE.
+#
+#             -------------------*/          \*-------------------
+
+coefficient_of_dermination = r2_score(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel(), y_hat_in_sample[:-forecasting_extrapolation_lengh].values.ravel())
+print('R2: %f' % coefficient_of_dermination)
+
+#  R2: 0.001089
+
+
+#             -------------------*/          \*-------------------
+#
+#    An R2 value of 0.001089 is extremely low, as it is very close to zero.
+#    Meaning: This indicates that the model explains only about 0.11% of the total variance in the log returns.
+#
+#    Context in Finance: 
+#
+#       This result is NOT a sign of a poor model; rather, it's an expected
+#       and often desired outcome when modeling returns for liquid assets like stocks.
+#       If R2 were high (e.g., above 0.5), it would imply that returns are highly predictable,
+#       which would violate the Efficient Market Hypothesis (EMH).
+#
+#       The low R2 simply confirms what the returns graph showed: the best forecast for tomorrow's
+#       return is the mean (≈0). The model is not (and should not be) successfully predicting
+#       individual daily price movements (the peaks and valleys).
+#       
+#       The primary objective here is to capture volatility, not the mean direction.
+#       In summary, the low R2 is consistent with an efficient market.
+#
+#             -------------------*/          \*-------------------
+
+Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test = ks_2samp(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel(), y_hat_in_sample[:-forecasting_extrapolation_lengh].values.ravel())
+print('statistic: %f   ,pvalue: %f' % (Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test[0],Kolmogorov_Smirnoff_Adherence_One_Dimensional_Sampling_Test[1]))
+
+#   statistic: 0.483471   ,pvalue: 0.000000
+
+#             -------------------*/          \*-------------------
+#
+#    Since the p-value (0.000000) is much smaller than the standard significance level (α=0.05),
+#    we REJECT the Null Hypothesis (H0).
+#
+#    Implication: 
+#
+#    The distributions of the observed returns and the predicted returns are statistically different.
+#
+#             -------------------*/          \*-------------------
+
+# ---- QQplot between the two samples ----
+
+# Sort both arrays ( It's needed to align the percentiles in both distributions)
+sorted_obs = np.sort(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.ravel().astype(np.float64))
+sorted_hat = np.sort(y_hat_in_sample[:-forecasting_extrapolation_lengh].values.ravel().astype(np.float64))
+
+
+# Q-Q Plot between y_obs and y_hat
+plt.figure(figsize=(6, 6))
+plt.plot(sorted_obs, sorted_hat, 'o')
+plt.plot([sorted_obs.min(), sorted_obs.max()],
+         [sorted_obs.min(), sorted_obs.max()], 'r--')  # 45-degree line
+plt.title("Q-Q Plot: y_hat vs y_obs")
+plt.xlabel("Observed Quantiles for Log-Returns In-Sample")
+plt.ylabel("Predicted Quantiles for Log-Returns In-Sample")
+plt.grid(True)
+plt.show()
+
+
+# Figure_2.1g_Q-Q_Plot_between_log_returns_In_Sample_and_estimated 
+
+
+#             -------------------*/          \*-------------------
+#
+#    1. Central Pattern and Variation
+#
+#       The Reference Line (Red Dashed Line): 
+#        
+#       Represents where the points should fall if the distributions were identical.
+#    
+#       Data Points (Forecasts): 
+#        
+#       The vast majority of points are clustered horizontally along the y=0 line on the vertical axis.
+#       
+#       Implication: 
+#        
+#       This extreme pattern is the visual confirmation of the results obtained from the Kolmogorov-Smirnov Test and the R2.
+#       The model predicts that the mean of all returns is zero (the flat blue line in the previous graph).
+#       Since the forecast is almost always y_hat ≈ 0, the distribution of its predicted quantiles is a straight line around zero,
+#       regardless of the observed quantiles.
+#
+#    2. Tail Dispersion
+#    
+#       Observation: 
+#
+#       For the extreme observed quantiles (tails) – both negative (near -1.0) and positive (near 1.0) on the X-axis –
+#       the predicted quantiles remain fixed at zero on the Y-axis.
+#    
+#       Implication: 
+#        
+#       This proves that the model fails to capture or predict the dispersion and extreme values (volatility) of the returns.
+#
+#       In a market return forecasting context, this graph is the clearest visualization of the low R2 and the KS test rejection.
+#       It reinforces that the model is only estimating the unconditional mean (zero) and is not generating point forecasts
+#       that resemble the actual high-volatility distribution of returns.
+#
+#       This graph can be used to argue that for risk (Volatility), the model must rely on the 95% Credible Interval
+#       and not on the point prediction line (y_hat).
+
+
+####################################
+#  Out of Sample                   #
+#        predictive KPI peformace  #
+#                                  #
+####################################
+
+# (Log Returns test sample) 
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10), sharex=True)
+ax.plot(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:],PETR3_SA_Close_fractional_difference_Linear_filtred_test , label='Observed test sample log-returns', color='grey', alpha=0.7)
+ax.plot(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], y_hat_in_sample[-forecasting_extrapolation_lengh:], label='Log-returns Out of Sample', color='blue', linewidth=2)
+ax.fill_between(PETR3_SA_Dates_log_dif[-forecasting_extrapolation_lengh:], x_lower[-forecasting_extrapolation_lengh:],x_upper[-forecasting_extrapolation_lengh:], color='blue', alpha=0.2, label='95% Credible Interval')
+ax.set_ylabel('Value')
+ax.set_title('Estimated Log-returns Out of Sample Sample')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+fig.autofmt_xdate() 
+plt.tight_layout() 
+plt.show()
+
+# Figure_2.1h_Out_of_Sample_Log_Returns
+
+#=============*/        \*=================
+
+alpha = samples["alpha"]
+  
+pd.DataFrame(alpha).to_csv(r'C:\Users\rafae\OneDrive\Documents\Econometrics_CEA\log_returns_location.csv', index=None)
+log_returns_location = pd.read_csv("C:/Users/rafae/OneDrive/Documents/Econometrics_CEA/log_returns_location.csv")
+
+log_returns_location_mean = log_returns_location.mean(axis=0)
+    
+log_returns_scale = Returns_volatility_mean
+
+model_0_residuals_log_returns = calculate_residuals(PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.flatten().astype(np.float64),
+                   log_returns_location_mean, log_returns_scale[:-forecasting_extrapolation_lengh])
+                   
+log_returns_in_sample = y_hat_in_sample[:-forecasting_extrapolation_lengh]
+
+#=============*/        \*=================				   
+# Plot Residuals vs. Fitted Values 
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x=log_returns_in_sample, y= model_0_residuals_log_returns, alpha=0.7)
+plt.axhline(0, color='red', linestyle='--', linewidth=0.8)
+plt.title('Residuals vs. Fitted Values')
+plt.xlabel('Fitted Values')
+plt.ylabel('Residuals')
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+
+# Figure_2.1i_Residuals_vs_Fitted Values(Log-volume).
+
+
+#             -------------------*/          \*-------------------
+#
+#    This graph is used to assess whether your regression model meets the assumptions of
+#    linearity and homoscedasticity (constant error variance).
+#
+#    Point Pattern and Linearity
+#       
+#       The ideal pattern for a well-specified model is a random cloud of points centered
+#       around the horizontal line y=0 (the dashed red line).
+#       
+#       Observation: 
+#        
+#       The residuals in this graph (Y-Axis) are centered around zero and do not
+#       form a clear curvilinear pattern (like a curve or banana shape).
+#    
+#       Implication: 
+#
+#       The absence of a strong curvilinear pattern suggests that the mean
+#       relationship between the variables is reasonably well captured by the model,
+#       thus meeting the assumption of linearity.
+#
+#    Homoscedasticity (Error Variance)
+#
+#
+#       Homoscedasticity requires that the vertical dispersion of the points be uniform across
+#       the entire spectrum of fitted values (X-Axis).
+#    
+#       Observation:
+#    
+#          a) The X-Axis has a very narrow scale (from approximately -0.035 to 0.000), indicating
+#             that the fitted Log-volume values are very small and show little variation.
+#
+#          b) The cloud of points, although appearing vaguely symmetric, exhibits a fairly uniform
+#             vertical dispersion across the narrow range of the X-Axis. There is no clear "cone shape."
+#
+#       Implication: 
+#
+#       The variance of the residuals (point dispersion) appears to be relatively
+#       constant. This suggests that the assumption of homoscedasticity is plausible for this
+#       specific model, which is a positive result.
+#
+#    Outliers (Extreme Values)
+#
+#
+#       Observation: 
+#
+#       There are a few points that exhibit large errors (high residuals), such as
+#       the top point at y ≈ 4.2 (near x ≈ -0.012) and another bottom point at y ≈ -4.0 (near x ≈ -0.015).
+#    
+#       Implication: 
+#        
+#       These are outliers (extreme observations) where the model made significantly
+#       large forecasting errors. While they don't disqualify the model, they should be
+#       investigated as they may have a disproportionate influence on the regression coefficients.
+#
+#             -------------------*/          \*-------------------
+
+
+# --- Breusch-Pagan Test ---
+# Arguments: residuals, X (exog, independent variables)
+# Returns: lagrange_multiplier, p_value_lm, fvalue, p_value_f
+lm, lm_pvalue, fvalue, f_pvalue = het_breuschpagan(model_0_residuals_log_returns, 
+PETR3_SA_Close_fractional_difference_Linear_filtred_train.values.astype(np.float64))
+
+
+print(f"\n--- Breusch-Pagan Test ---")
+print(f"Lagrange Multiplier p-value: {lm_pvalue:.4f}")
+print(f"F-statistic p-value:         {f_pvalue:.4f}")
+if lm_pvalue < 0.05:
+    print("  -> Significant p-value suggests presence of heteroscedasticity (reject H0).")
+else:
+    print("  -> No significant evidence of heteroscedasticity (fail to reject H0).")
+
+#  No significant evidence of heteroscedasticity (fail to reject H0).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
